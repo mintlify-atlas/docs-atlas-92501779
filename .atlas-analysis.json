@@ -1,0 +1,200 @@
+{
+  "projectType": "framework",
+  "projectName": "Evidence",
+  "projectDescription": "Open-source framework for building business intelligence dashboards and data products with SQL and markdown",
+  "theme": "mint",
+  "primaryColor": "#14B8A6",
+  "lightColor": "#5EEAD4",
+  "darkColor": "#0F766E",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core-concepts/data-sources",
+              "core-concepts/queries",
+              "core-concepts/components",
+              "core-concepts/templated-pages",
+              "core-concepts/loops-and-conditionals",
+              "core-concepts/markdown"
+            ]
+          },
+          {
+            "group": "Data Sources",
+            "pages": [
+              "data-sources/overview",
+              "data-sources/bigquery",
+              "data-sources/snowflake",
+              "data-sources/postgres",
+              "data-sources/redshift",
+              "data-sources/duckdb",
+              "data-sources/motherduck",
+              "data-sources/mysql",
+              "data-sources/mssql",
+              "data-sources/sqlite",
+              "data-sources/databricks",
+              "data-sources/trino",
+              "data-sources/csv"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/overview",
+              "components/charts",
+              "components/tables",
+              "components/text-and-layout",
+              "components/inputs",
+              "components/custom-components"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/overview",
+              "deployment/netlify",
+              "deployment/vercel",
+              "deployment/docker",
+              "deployment/static-hosting"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/build-first-app",
+              "guides/connecting-data",
+              "guides/creating-charts",
+              "guides/templating",
+              "guides/styling"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Components",
+        "groups": [
+          {
+            "group": "Chart Components",
+            "pages": [
+              "api/charts/line-chart",
+              "api/charts/bar-chart",
+              "api/charts/area-chart",
+              "api/charts/scatter-plot",
+              "api/charts/bubble-chart",
+              "api/charts/histogram",
+              "api/charts/box-plot",
+              "api/charts/heatmap",
+              "api/charts/sankey",
+              "api/charts/funnel-chart",
+              "api/charts/sparkline"
+            ]
+          },
+          {
+            "group": "Data Display",
+            "pages": [
+              "api/data/data-table",
+              "api/data/value",
+              "api/data/big-value",
+              "api/data/delta"
+            ]
+          },
+          {
+            "group": "Input Components",
+            "pages": [
+              "api/inputs/dropdown",
+              "api/inputs/button-group",
+              "api/inputs/checkbox",
+              "api/inputs/date-range",
+              "api/inputs/text-input"
+            ]
+          },
+          {
+            "group": "Layout Components",
+            "pages": [
+              "api/layout/grid",
+              "api/layout/tabs",
+              "api/layout/accordion",
+              "api/layout/alert",
+              "api/layout/callout"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI Reference",
+        "groups": [
+          {
+            "group": "Commands",
+            "pages": [
+              "cli/dev",
+              "cli/build",
+              "cli/sources",
+              "cli/preview"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "cli/config-file",
+              "cli/environment-variables"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Plugin Development",
+        "groups": [
+          {
+            "group": "Building Plugins",
+            "pages": [
+              "plugins/overview",
+              "plugins/datasource-plugins",
+              "plugins/component-plugins"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "SQL-based data querying in markdown files",
+    "Interactive data visualization components",
+    "Multiple data source connectors (BigQuery, Snowflake, Postgres, etc.)",
+    "Templated pages for dynamic content generation",
+    "Self-hosted deployment options",
+    "Plugin system for custom data sources and components",
+    "Built on SvelteKit for fast, modern web apps",
+    "Universal SQL layer for cross-database queries"
+  ],
+  "publicApiSurface": [
+    "CLI: evidence dev",
+    "CLI: evidence build",
+    "CLI: evidence sources",
+    "CLI: evidence preview",
+    "Component: LineChart",
+    "Component: BarChart",
+    "Component: AreaChart",
+    "Component: ScatterPlot",
+    "Component: BubbleChart",
+    "Component: DataTable",
+    "Component: BigValue",
+    "Component: Value",
+    "Component: Dropdown",
+    "Component: ButtonGroup",
+    "Component: Grid",
+    "Component: Tabs",
+    "Plugin API: datasource",
+    "Plugin API: component"
+  ]
+}
