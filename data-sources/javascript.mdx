@@ -1,0 +1,291 @@
+---
+title: JavaScript Source
+description: Run arbitrary JavaScript code to fetch data from any API or source
+icon: code
+---
+
+The JavaScript source plugin allows you to run arbitrary JavaScript code as a data source. It's a quick way to get data into Evidence from APIs, web scraping, or custom data processing without creating a full connector.
+
+## Use Cases
+
+- Fetch data from REST APIs
+- Web scraping
+- Custom data transformations
+- Combine multiple data sources
+- Access services without native connectors
+
+## Setup
+
+<Steps>
+  <Step title="Add JavaScript Source">
+    Navigate to Settings in your Evidence app (localhost:3000/settings) and add a JavaScript datasource.
+  </Step>
+
+  <Step title="Create JavaScript Files">
+    Create `.js` files in your `sources/javascript/` directory. Each file represents a table.
+  </Step>
+
+  <Step title="Export Data">
+    Your JavaScript file must export a `data` variable containing an array of objects.
+  </Step>
+
+  <Step title="Run Sources">
+    Generate the data files:
+    
+    ```bash
+    npm run sources
+    ```
+  </Step>
+</Steps>
+
+## Basic Example
+
+Create a file like `sources/javascript/pokedex.js`:
+
+```javascript
+let url = 'https://pokeapi.co/api/v2/pokemon/';
+
+const response = await fetch(url);
+const json = await response.json();
+const data = json.results;
+
+export { data };
+```
+
+Reference the data in your markdown:
+
+```sql pokedex
+SELECT * FROM pokedex
+```
+
+## Using Environment Variables
+
+Pass credentials via environment variables prefixed with `EVIDENCE_`:
+
+**.env file:**
+```bash
+EVIDENCE_API_KEY=your_api_key_here
+EVIDENCE_API_SECRET=your_secret_here
+```
+
+**JavaScript file:**
+```javascript
+const apiKey = process.env.EVIDENCE_API_KEY;
+const apiSecret = process.env.EVIDENCE_API_SECRET;
+
+const url = 'https://api.example.com/data';
+
+const response = await fetch(url, {
+  headers: {
+    'x-api-key': apiKey,
+    'Authorization': `Bearer ${apiSecret}`
+  }
+});
+
+const json = await response.json();
+const data = json.results;
+
+export { data };
+```
+
+## Type Support
+
+| JavaScript Type | Supported | Notes |
+|-----------------|-----------|-------|
+| String | ✅ Yes | Converted to Evidence string type |
+| Number | ✅ Yes | Converted to Evidence number type |
+| Boolean | ✅ Yes | Converted to Evidence boolean type |
+| Date | ✅ Yes | Converted to Evidence date type |
+| Array | ⚠️ Partial | Arrays are converted to strings (e.g., `[1, 2, 3]` → `"1,2,3"`) |
+| Object | ❌ No | Objects display as `[object Object]` |
+
+<Warning>
+**Objects and arrays:** Convert complex types to strings or flatten them in your JavaScript code before exporting.
+</Warning>
+
+## Advanced Examples
+
+### Pagination
+
+Handle paginated APIs:
+
+```javascript
+const baseUrl = 'https://api.example.com/items';
+let page = 1;
+let allData = [];
+let hasMore = true;
+
+while (hasMore) {
+  const response = await fetch(`${baseUrl}?page=${page}&limit=100`);
+  const json = await response.json();
+  
+  allData = allData.concat(json.items);
+  
+  hasMore = json.has_next_page;
+  page++;
+}
+
+const data = allData;
+export { data };
+```
+
+### Data Transformation
+
+Transform API responses into the format you need:
+
+```javascript
+const response = await fetch('https://api.github.com/repos/evidence-dev/evidence/issues');
+const issues = await response.json();
+
+// Transform the data structure
+const data = issues.map(issue => ({
+  issue_number: issue.number,
+  title: issue.title,
+  state: issue.state,
+  created_at: new Date(issue.created_at),
+  author: issue.user.login,
+  labels: issue.labels.map(l => l.name).join(', '), // Convert array to string
+  comments: issue.comments
+}));
+
+export { data };
+```
+
+### Multiple API Calls
+
+Combine data from multiple endpoints:
+
+```javascript
+// Fetch users
+const usersResponse = await fetch('https://api.example.com/users');
+const users = await usersResponse.json();
+
+// Fetch orders for each user
+const ordersPromises = users.map(user => 
+  fetch(`https://api.example.com/users/${user.id}/orders`)
+    .then(r => r.json())
+);
+
+const allOrders = await Promise.all(ordersPromises);
+
+// Flatten and combine
+const data = users.flatMap((user, index) => 
+  allOrders[index].map(order => ({
+    user_id: user.id,
+    user_name: user.name,
+    order_id: order.id,
+    order_date: new Date(order.created_at),
+    amount: parseFloat(order.total)
+  }))
+);
+
+export { data };
+```
+
+### Error Handling
+
+Include error handling for production use:
+
+```javascript
+try {
+  const response = await fetch('https://api.example.com/data', {
+    headers: {
+      'Authorization': `Bearer ${process.env.EVIDENCE_API_TOKEN}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const json = await response.json();
+  const data = json.data || [];
+  
+  export { data };
+} catch (error) {
+  console.error('Failed to fetch data:', error);
+  // Export empty array on error
+  const data = [];
+  export { data };
+}
+```
+
+## Working with CSV/JSON Files
+
+Read local files using Node.js:
+
+```javascript
+import { readFileSync } from 'fs';
+import { parse } from 'csv-parse/sync';
+
+const fileContent = readFileSync('./data/my-data.csv', 'utf-8');
+const data = parse(fileContent, {
+  columns: true,
+  skip_empty_lines: true
+});
+
+export { data };
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Environment Variables" icon="key">
+    Never hardcode API keys or secrets. Use environment variables with the `EVIDENCE_` prefix.
+  </Card>
+  
+  <Card title="Handle Errors" icon="triangle-exclamation">
+    Include try/catch blocks and provide fallback empty arrays to prevent build failures.
+  </Card>
+  
+  <Card title="Flatten Complex Data" icon="layer-group">
+    Convert nested objects and arrays to flat structures before exporting.
+  </Card>
+  
+  <Card title="Optimize API Calls" icon="gauge-high">
+    Implement pagination and caching to avoid rate limits and improve performance.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Cannot use import statement outside a module">
+    Ensure your file uses `.mjs` extension or has `"type": "module"` in package.json. Evidence supports both CommonJS and ES modules.
+  </Accordion>
+  
+  <Accordion title="fetch is not defined">
+    Use Node.js 18+ which includes native fetch support, or import node-fetch:
+    ```javascript
+    import fetch from 'node-fetch';
+    ```
+  </Accordion>
+  
+  <Accordion title="Data not showing in queries">
+    Verify that:
+    - You're exporting a `data` variable
+    - The data is an array of objects
+    - You've run `npm run sources` after creating/modifying the file
+    - The filename matches your SQL FROM clause
+  </Accordion>
+  
+  <Accordion title="Environment variables not working">
+    Make sure:
+    - Variables are prefixed with `EVIDENCE_`
+    - Your `.env` file is in the project root
+    - You've restarted the dev server after adding environment variables
+  </Accordion>
+</AccordionGroup>
+
+## Limitations
+
+- JavaScript files are executed at build time (when you run `npm run sources`), not at query time
+- The data is static once generated - you need to rebuild sources to refresh
+- Heavy processing should be optimized as it runs during the build
+- Some Node.js APIs may not be available in all deployment environments
+
+## Related
+
+- [Faker Datasource](/data-sources/faker) - Generate mock data for testing
+- [CSV Datasource](/data-sources/csv) - Import CSV files
+- [Environment Variables](/cli/environment-variables) - Configure credentials securely

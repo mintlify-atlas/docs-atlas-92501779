@@ -1,0 +1,260 @@
+---
+title: evidence upgrade
+description: Upgrade Evidence to the latest version
+icon: arrow-up
+---
+
+The `evidence upgrade` command updates your Evidence project to the latest version of the framework and its dependencies.
+
+## Usage
+
+```bash
+evidence upgrade
+```
+
+or with npx:
+
+```bash
+npx evidence upgrade
+```
+
+## What It Does
+
+The upgrade command performs the following actions:
+
+1. **Checks Current Version** - Determines your current Evidence version
+2. **Fetches Latest Version** - Checks npm for the latest @evidence-dev/evidence release
+3. **Updates Dependencies** - Updates Evidence packages in your package.json
+4. **Installs Packages** - Runs package manager install to apply updates
+5. **Migrates Configuration** - Updates config files if needed for breaking changes
+
+## Upgrade Process
+
+<Steps>
+  <Step title="Backup Your Project">
+    Before upgrading, commit your changes to git:
+    
+    ```bash
+    git add .
+    git commit -m "Pre-upgrade backup"
+    ```
+  </Step>
+
+  <Step title="Run Upgrade">
+    Execute the upgrade command:
+    
+    ```bash
+    evidence upgrade
+    ```
+  </Step>
+
+  <Step title="Review Changes">
+    Check which packages were updated:
+    
+    ```bash
+    git diff package.json
+    ```
+  </Step>
+
+  <Step title="Test Your App">
+    Start the development server and verify everything works:
+    
+    ```bash
+    npm run dev
+    ```
+  </Step>
+
+  <Step title="Rebuild Sources">
+    Regenerate your data files with the new version:
+    
+    ```bash
+    npm run sources
+    ```
+  </Step>
+</Steps>
+
+## Package Manager Support
+
+The upgrade command works with all major package managers:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npx evidence upgrade
+    ```
+    
+    Uses npm to install updated packages.
+  </Tab>
+
+  <Tab title="pnpm">
+    ```bash
+    pnpm evidence upgrade
+    ```
+    
+    Uses pnpm for faster installs with efficient disk usage.
+  </Tab>
+
+  <Tab title="yarn">
+    ```bash
+    yarn evidence upgrade
+    ```
+    
+    Uses yarn to manage dependencies.
+  </Tab>
+</Tabs>
+
+## Version Compatibility
+
+### Major Version Upgrades
+
+When upgrading across major versions (e.g., v1 → v2), review the [changelog](https://github.com/evidence-dev/evidence/blob/main/CHANGELOG.md) for breaking changes.
+
+Common breaking changes may include:
+- Component prop renames
+- Query syntax changes
+- Configuration file format updates
+- Deprecated features removed
+
+### Minor/Patch Upgrades
+
+Minor and patch version upgrades are generally safe and include:
+- New features (minor versions)
+- Bug fixes (patch versions)
+- Performance improvements
+- Security updates
+
+## Upgrading Specific Packages
+
+To upgrade specific Evidence packages without using the upgrade command:
+
+```bash
+npm install @evidence-dev/evidence@latest
+npm install @evidence-dev/core-components@latest
+npm install @evidence-dev/snowflake@latest
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Upgrade command not found">
+    Make sure you have Evidence installed locally or use npx:
+    ```bash
+    npx evidence upgrade
+    ```
+  </Accordion>
+
+  <Accordion title="Package lock conflicts">
+    Delete lock files and node_modules, then reinstall:
+    ```bash
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+  </Accordion>
+
+  <Accordion title="Build errors after upgrade">
+    1. Clear the Evidence cache:
+       ```bash
+       rm -rf .evidence
+       ```
+    2. Rebuild your project:
+       ```bash
+       npm run sources
+       npm run build
+       ```
+  </Accordion>
+
+  <Accordion title="Component props not working">
+    Check the [changelog](https://github.com/evidence-dev/evidence/blob/main/CHANGELOG.md) for renamed or deprecated props in the new version. The upgrade may include breaking changes.
+  </Accordion>
+</AccordionGroup>
+
+## Manual Upgrade Process
+
+If the automatic upgrade fails, you can manually upgrade:
+
+<Steps>
+  <Step title="Check Latest Version">
+    Find the latest version on npm:
+    ```bash
+    npm show @evidence-dev/evidence version
+    ```
+  </Step>
+
+  <Step title="Update package.json">
+    Edit your package.json to use the latest version:
+    ```json
+    {
+      "dependencies": {
+        "@evidence-dev/evidence": "^XX.X.X"
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Install Updates">
+    Run your package manager:
+    ```bash
+    npm install
+    ```
+  </Step>
+
+  <Step title="Update Datasources">
+    If you use datasource plugins, upgrade them too:
+    ```bash
+    npm install @evidence-dev/snowflake@latest
+    npm install @evidence-dev/postgres@latest
+    ```
+  </Step>
+</Steps>
+
+## Staying Updated
+
+### Check Current Version
+
+See your installed Evidence version:
+
+```bash
+npm list @evidence-dev/evidence
+```
+
+Or check in your Evidence app's settings page.
+
+### Release Notes
+
+Stay informed about updates:
+- [GitHub Releases](https://github.com/evidence-dev/evidence/releases)
+- [Changelog](https://github.com/evidence-dev/evidence/blob/main/CHANGELOG.md)
+- [Evidence Blog](https://evidence.dev/blog)
+
+### Update Frequency
+
+Evidence follows semantic versioning:
+- **Patch releases** (X.X.1) - Weekly, safe to upgrade immediately
+- **Minor releases** (X.1.0) - Monthly, new features, backward compatible
+- **Major releases** (2.0.0) - Rarely, may include breaking changes
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Test Before Deploying" icon="flask">
+    Always test upgrades in development before deploying to production
+  </Card>
+  
+  <Card title="Use Version Control" icon="code-branch">
+    Commit changes before and after upgrading to easily roll back if needed
+  </Card>
+  
+  <Card title="Read Release Notes" icon="newspaper">
+    Review the changelog to understand what's changing
+  </Card>
+  
+  <Card title="Update Regularly" icon="calendar">
+    Stay up to date with security patches and bug fixes
+  </Card>
+</CardGroup>
+
+## Related
+
+- [Environment Variables](/cli/environment-variables) - Configure your Evidence project
+- [Build Command](/cli/build) - Build your project after upgrading
+- [Development](/cli/dev) - Test your upgraded project locally

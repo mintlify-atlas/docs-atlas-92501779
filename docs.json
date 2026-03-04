@@ -57,7 +57,9 @@
               "data-sources/sqlite",
               "data-sources/databricks",
               "data-sources/trino",
-              "data-sources/csv"
+              "data-sources/csv",
+              "data-sources/faker",
+              "data-sources/javascript"
             ]
           },
           {
@@ -152,7 +154,8 @@
               "cli/dev",
               "cli/build",
               "cli/sources",
-              "cli/preview"
+              "cli/preview",
+              "cli/upgrade"
             ]
           },
           {

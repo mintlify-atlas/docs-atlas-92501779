@@ -1,0 +1,277 @@
+---
+title: Faker (Mock Data)
+description: Generate realistic mock data for testing and development using Faker.js
+icon: pencil
+---
+
+Faker is a special datasource connector that generates realistic mock data for testing and development. It's useful for:
+- Building demos without real data
+- Testing your Evidence app locally
+- Creating sample datasets for documentation
+
+## Installation
+
+The Faker datasource is included with Evidence by default.
+
+## Configuration
+
+Faker doesn't require database credentials. Instead, you define data schemas using YAML configuration files.
+
+### Basic Setup
+
+<Steps>
+  <Step title="Add Faker Source">
+    Navigate to Settings in your Evidence app (localhost:3000/settings) and add a Faker datasource.
+  </Step>
+
+  <Step title="Create Schema Files">
+    Create `.yaml` files in your `sources/faker/` directory to define your mock data schemas.
+  </Step>
+
+  <Step title="Run Sources">
+    Generate the mock data:
+    
+    ```bash
+    npm run sources
+    ```
+  </Step>
+</Steps>
+
+### Schema Definition
+
+Define your mock data structure in YAML files. Faker uses the [@faker-js/faker](https://fakerjs.dev/) library.
+
+**Example: `sources/faker/users.yaml`**
+
+```yaml
+tables:
+  users:
+    rows: 100
+    columns:
+      - name: user_id
+        type: number
+        generator: datatype.number
+        min: 1
+        max: 10000
+      
+      - name: first_name
+        type: string
+        generator: person.firstName
+      
+      - name: last_name
+        type: string
+        generator: person.lastName
+      
+      - name: email
+        type: string
+        generator: internet.email
+      
+      - name: signup_date
+        type: date
+        generator: date.past
+        years: 2
+      
+      - name: is_active
+        type: boolean
+        generator: datatype.boolean
+```
+
+### Available Generators
+
+Faker provides hundreds of data generators organized by category:
+
+**Person Data:**
+- `person.firstName` - First names
+- `person.lastName` - Last names
+- `person.fullName` - Full names
+- `person.jobTitle` - Job titles
+
+**Internet Data:**
+- `internet.email` - Email addresses
+- `internet.url` - URLs
+- `internet.userName` - Usernames
+- `internet.ipv4` - IP addresses
+
+**Commerce Data:**
+- `commerce.productName` - Product names
+- `commerce.price` - Prices
+- `commerce.department` - Departments
+
+**Date/Time:**
+- `date.past` - Past dates
+- `date.future` - Future dates
+- `date.recent` - Recent dates
+- `date.between` - Dates between two dates
+
+**Numbers:**
+- `datatype.number` - Random numbers
+- `datatype.float` - Random floats
+- `datatype.boolean` - Boolean values
+
+**Location:**
+- `location.city` - City names
+- `location.country` - Countries
+- `location.streetAddress` - Street addresses
+
+See the [Faker.js API documentation](https://fakerjs.dev/api/) for the complete list of generators.
+
+## Advanced Features
+
+### Seeded Data
+
+Use the same seed value to generate consistent, reproducible data:
+
+```yaml
+seed: 12345
+tables:
+  products:
+    rows: 50
+    columns:
+      - name: product_name
+        type: string
+        generator: commerce.productName
+```
+
+### Relationships Between Tables
+
+Create related data across multiple tables:
+
+```yaml
+tables:
+  orders:
+    rows: 500
+    columns:
+      - name: order_id
+        type: number
+        generator: datatype.number
+      
+      - name: user_id
+        type: number
+        generator: datatype.number
+        min: 1
+        max: 100  # References user_id range from users table
+      
+      - name: order_date
+        type: date
+        generator: date.recent
+        days: 90
+```
+
+### Custom Value Ranges
+
+Control the output of generators with parameters:
+
+```yaml
+columns:
+  - name: price
+    type: number
+    generator: commerce.price
+    min: 10
+    max: 1000
+    dec: 2  # Decimal places
+  
+  - name: quantity
+    type: number
+    generator: datatype.number
+    min: 1
+    max: 100
+```
+
+## Example Schemas
+
+### E-commerce Dataset
+
+```yaml
+seed: 42
+tables:
+  customers:
+    rows: 200
+    columns:
+      - name: customer_id
+        type: number
+        generator: datatype.number
+        min: 1000
+        max: 9999
+      - name: name
+        type: string
+        generator: person.fullName
+      - name: email
+        type: string
+        generator: internet.email
+      - name: city
+        type: string
+        generator: location.city
+      - name: registration_date
+        type: date
+        generator: date.past
+        years: 3
+  
+  orders:
+    rows: 1000
+    columns:
+      - name: order_id
+        type: number
+        generator: datatype.number
+        min: 10000
+        max: 99999
+      - name: customer_id
+        type: number
+        generator: datatype.number
+        min: 1000
+        max: 9999
+      - name: order_date
+        type: date
+        generator: date.recent
+        days: 365
+      - name: total_amount
+        type: number
+        generator: commerce.price
+        min: 20
+        max: 500
+      - name: status
+        type: string
+        generator: helpers.arrayElement
+        values: ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
+```
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Demo Applications" icon="presentation">
+    Build impressive demos without needing real data or database access
+  </Card>
+  
+  <Card title="Testing" icon="flask">
+    Generate large datasets to test performance and edge cases
+  </Card>
+  
+  <Card title="Development" icon="code">
+    Develop locally without connecting to production databases
+  </Card>
+  
+  <Card title="Documentation" icon="book">
+    Create consistent example datasets for tutorials and guides
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Faker data not generating">
+    Make sure you've run `npm run sources` after creating or modifying your schema files. The Faker plugin generates static Parquet files that Evidence uses.
+  </Accordion>
+  
+  <Accordion title="Invalid generator error">
+    Check the [Faker.js API docs](https://fakerjs.dev/api/) to verify the generator name. Generator names are case-sensitive and follow the format `category.method`.
+  </Accordion>
+  
+  <Accordion title="Need more rows">
+    Increase the `rows` value in your schema file. Note that very large datasets (>100,000 rows) may take longer to generate.
+  </Accordion>
+</AccordionGroup>
+
+## Related
+
+- [JavaScript Datasource](/data-sources/javascript) - Run custom JavaScript to fetch data
+- [CSV Datasource](/data-sources/csv) - Import CSV files
+- [DuckDB](/data-sources/duckdb) - Local database with SQL
