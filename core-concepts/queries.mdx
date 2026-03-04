@@ -1,0 +1,323 @@
+---
+title: SQL Queries
+description: Write SQL queries in markdown code fences to generate data for components
+---
+
+# SQL Queries
+
+Evidence runs SQL queries directly in your markdown files using code fences. Query results become data you can visualize with components.
+
+## Inline Queries
+
+Write SQL queries using markdown code fences with the `sql` language and a query name:
+
+````markdown
+```sql sales_by_category
+SELECT 
+    category,
+    SUM(sales) as total_sales
+FROM needful_things.orders
+GROUP BY category
+ORDER BY total_sales DESC
+```
+````
+
+<Note>
+Evidence queries use the **DuckDB SQL dialect**, regardless of your source database. This provides a consistent query experience across all data sources.
+</Note>
+
+### Query Naming Requirements
+
+Every query **must** have a name immediately after the opening backticks:
+
+````markdown
+```sql orders_by_month  
+SELECT * FROM orders
+```
+````
+
+The query name:
+- Must start with a letter or underscore
+- Can contain letters, numbers, and underscores
+- Cannot contain spaces or special characters
+
+### Using Query Results
+
+Reference your query in components using `data={query_name}`:
+
+```markdown
+<BarChart 
+    data={sales_by_category}
+    x="category"
+    y="total_sales"
+/>
+```
+
+Or use the data in text:
+
+```markdown
+Total sales: <Value data={sales_by_category} column="total_sales" />
+```
+
+## Query Chaining
+
+Reference other queries by wrapping the query name in `${ }`:
+
+````markdown
+```sql orders_by_item
+SELECT
+    item,
+    SUM(sales) as sales
+FROM needful_things.orders
+GROUP BY item
+```
+
+```sql top_items
+SELECT
+    item,
+    sales
+FROM ${orders_by_item}
+WHERE sales > 1000
+ORDER BY sales DESC
+LIMIT 10
+```
+````
+
+Evidence compiles this into a subquery:
+
+```sql
+SELECT
+    item,
+    sales
+FROM (
+    SELECT
+        item,
+        SUM(sales) as sales
+    FROM needful_things.orders
+    GROUP BY item
+)
+WHERE sales > 1000
+ORDER BY sales DESC
+LIMIT 10
+```
+
+<Info>
+Query order doesn't matter - you can reference queries that appear before or after the current query.
+</Info>
+
+### Viewing Compiled SQL
+
+Toggle between your written SQL and the compiled SQL in the query viewer:
+
+![Compiled SQL Toggle](/img/compiled-written-toggle.gif)
+
+### Query Chaining Best Practices
+
+**Aliasing Subqueries**
+
+Some SQL dialects (PostgreSQL, MySQL) require aliased subqueries:
+
+```sql
+SELECT * 
+FROM ${sales_by_item} as sales_by_item
+WHERE sales > 1000
+```
+
+**Avoiding Circular References**
+
+Evidence detects circular references and displays an error:
+
+![Circular Reference Error](/img/circular-error-single.png)
+
+## SQL File Queries
+
+For queries used across multiple pages, store them in the `/queries` directory:
+
+```
+my-evidence-project/
+  pages/
+    dashboard.md
+    sales-report.md
+  queries/
+    monthly_sales.sql
+    customer_metrics.sql
+    reports/
+      executive_summary.sql
+```
+
+### Using File Queries
+
+Reference file queries in your page's frontmatter:
+
+```yaml
+---
+title: Sales Dashboard
+queries:
+  - sales_data: monthly_sales.sql
+  - metrics: customer_metrics.sql
+  - summary: reports/executive_summary.sql
+---
+```
+
+Now use `sales_data`, `metrics`, and `summary` in your page like any other query.
+
+### Automatic Naming
+
+Omit the name to use the filename:
+
+```yaml
+---
+queries:
+  - monthly_sales.sql
+  - reports/executive_summary.sql
+---
+```
+
+These are available as `monthly_sales` and `reports_executive_summary` (note the `_` replacing `/`).
+
+### File Query Chaining
+
+File queries can reference each other. Include all dependencies in frontmatter:
+
+`queries/base_orders.sql`:
+```sql
+SELECT * FROM needful_things.orders
+WHERE order_date >= '2024-01-01'
+```
+
+`queries/order_summary.sql`:
+```sql
+SELECT 
+    DATE_TRUNC('month', order_date) as month,
+    COUNT(*) as order_count
+FROM ${base_orders}
+GROUP BY month
+```
+
+In your page:
+```yaml
+---
+queries:
+  - base_orders.sql
+  - order_summary.sql
+---
+```
+
+## Query Parameters
+
+Queries can accept parameters from inputs or URL parameters.
+
+### Input Parameters
+
+Use values from input components:
+
+````markdown
+<Dropdown name=category_filterlt;Dropdown name="category_filter" data={categories} value="category" />
+
+```sql filtered_sales
+SELECT 
+    order_date,
+    SUM(sales) as total_sales
+FROM needful_things.orders
+WHERE category = '${inputs.category_filter.value}'
+GROUP BY order_date
+```
+````
+
+<Warning>
+Always wrap input parameters in quotes: `'${inputs.name.value}'` to prevent SQL injection and syntax errors.
+</Warning>
+
+### URL Parameters
+
+Use URL parameters from templated pages:
+
+````markdown
+```sql customer_orders
+SELECT 
+    order_date,
+    order_total
+FROM needful_things.orders
+WHERE customer_id = '${params.customer_id}'
+ORDER BY order_date DESC
+```
+````
+
+<Info>
+See [Templated Pages](/core-concepts/templated-pages) for more on URL parameters.
+</Info>
+
+## Live Query Execution
+
+In development mode:
+
+- Queries run automatically when you open a page
+- Changes to queries trigger automatic page reloads
+- Query results appear in an interactive table viewer
+- Errors display with syntax highlighting and helpful messages
+
+## Example: Complete Query Workflow
+
+Here's a complete example showing inline queries, query chaining, and components:
+
+````markdown
+---
+title: Sales Analysis
+---
+
+# Monthly Sales Report
+
+```sql orders
+SELECT 
+    DATE_TRUNC('month', order_datetime) as month,
+    category,
+    SUM(sales) as sales,
+    COUNT(*) as order_count
+FROM needful_things.orders
+WHERE order_datetime >= '2024-01-01'
+GROUP BY month, category
+```
+
+```sql monthly_totals
+SELECT
+    month,
+    SUM(sales) as total_sales,
+    SUM(order_count) as total_orders
+FROM ${orders}
+GROUP BY month
+ORDER BY month
+```
+
+<LineChart
+    data={monthly_totals}
+    x="month"
+    y="total_sales"
+    title="Sales Trend"
+/>
+
+<BarChart
+    data={orders}
+    x="month"
+    y="sales"
+    series="category"
+    title="Sales by Category"
+/>
+````
+
+## Code Fences in Other Languages
+
+To display code without executing it, use reserved language names:
+
+````markdown
+```python
+for i in range(10):
+    print(f"Number {i}")
+```
+
+```javascript
+const data = await fetch('/api/data');
+console.log(data);
+```
+````
+
+These render as code blocks without executing. See the full list of [reserved language names](https://github.com/evidence-dev/evidence/blob/main/packages/lib/preprocess/src/utils/supportedLanguages.cjs).

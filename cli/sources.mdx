@@ -1,0 +1,159 @@
+---
+title: evidence sources
+description: Generate parquet data files from source queries
+---
+
+The `evidence sources` command executes your SQL queries and generates `.parquet` data files from your configured data sources.
+
+## Syntax
+
+```bash
+evidence sources [options]
+```
+
+## Description
+
+This command:
+
+- Connects to configured data sources
+- Executes SQL queries from the `sources/` directory
+- Generates `.parquet` files containing query results
+- Creates a manifest file for the Evidence runtime
+- Stores outputs in `.evidence/template/static/data/`
+
+The `sources` command is essential for making data available to your Evidence pages.
+
+## Options
+
+<ParamField path="--changed" type="boolean" default="false">
+  Only build sources whose queries have changed since the last run. Significantly speeds up incremental builds.
+</ParamField>
+
+<ParamField path="--sources" type="string">
+  Only build queries from the specified source directories. Accepts a comma-separated list of source names.
+</ParamField>
+
+<ParamField path="--queries" type="string">
+  Only build the specified queries. Accepts comma-separated list of query names or source-qualified names (e.g., `source.query`).
+</ParamField>
+
+<ParamField path="--debug" type="boolean" default="false">
+  Show debug output during query execution. Useful for troubleshooting connection and query issues.
+</ParamField>
+
+<ParamField path="--strict" type="boolean" default="false">
+  Fail the entire build when any source query fails. By default, individual query failures are logged but don't stop the build.
+</ParamField>
+
+## Usage Examples
+
+### Build all sources
+
+```bash
+evidence sources
+```
+
+### Build only changed queries
+
+```bash
+evidence sources --changed
+```
+
+This is useful for development when you've only modified a few queries.
+
+### Build specific sources
+
+```bash
+evidence sources --sources needful_things
+```
+
+Build from multiple sources:
+```bash
+evidence sources --sources needful_things,social_media
+```
+
+### Build specific queries
+
+```bash
+evidence sources --queries orders,reviews
+```
+
+Using source-qualified query names:
+```bash
+evidence sources --queries needful_things.orders,needful_things.reviews
+```
+
+### Build with strict error handling
+
+```bash
+evidence sources --strict
+```
+
+Useful in CI/CD pipelines where you want to fail the build on any query error.
+
+### Debug query execution
+
+```bash
+evidence sources --debug
+```
+
+## Output Location
+
+Data files are written to:
+
+```
+.evidence/template/static/data/
+├── [source-name]/
+│   └── [query-name]/
+│       └── [query-name].parquet
+└── manifest.json
+```
+
+The manifest.json file tracks all available queries and their metadata.
+
+## Environment Variables
+
+The sources command uses:
+
+- `EVIDENCE_DATA_DIR` - Output directory for data files (default: `./.evidence/template/static/data`)
+- `EVIDENCE_DATA_URL_PREFIX` - URL prefix for accessing data (default: `static/data`)
+- `EVIDENCE_SOURCE__[source]__[option]` - Source-specific credentials and options
+- `EVIDENCE_VAR__[name]` - Variables for query interpolation
+
+See [Environment Variables](/cli/environment-variables) for complete details.
+
+## Variable Interpolation
+
+You can use `${var}` syntax in your queries, which will be replaced with `EVIDENCE_VAR__[var]` environment variables:
+
+```sql
+SELECT * FROM users WHERE region = '${region}'
+```
+
+Set the variable:
+```bash
+EVIDENCE_VAR__region=us-east evidence sources
+```
+
+## Exit Codes
+
+- `0` - All queries executed successfully (or with errors in non-strict mode)
+- Non-zero - Build failed (connection errors, strict mode query failures)
+
+## Alias
+
+The old command name is still supported:
+
+```bash
+evidence build:sources
+```
+
+<Warning>
+  `build:sources` is deprecated and will be removed in a future version. Use `evidence sources` instead.
+</Warning>
+
+## Related Commands
+
+- [evidence dev](/cli/dev) - Start development server (loads source data)
+- [evidence build](/cli/build) - Build production outputs (run sources first)
+- [Configuration File](/cli/config-file) - Configure data sources

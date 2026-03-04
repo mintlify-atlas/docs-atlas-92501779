@@ -1,0 +1,133 @@
+---
+title: What is Evidence?
+description: Evidence is an open source framework for building data products with SQL - things like reports, decision-support tools, and embedded dashboards
+---
+
+# What is Evidence?
+
+Evidence is an open source framework for building data products with SQL - things like reports, decision-support tools, and embedded dashboards. It's a code-driven alternative to drag-and-drop BI tools.
+
+<Tip>
+Try [Evidence Studio](https://evidence.studio) - the new, faster way to build data products with SQL, markdown and AI.
+</Tip>
+
+## Business intelligence as code
+
+Evidence generates a website from markdown files, combining the power of SQL with the simplicity of markdown to create interactive reports and dashboards.
+
+<img src="/images/how-it-works.png" alt="Evidence workflow diagram" />
+
+## Key capabilities
+
+<CardGroup cols={2}>
+  <Card title="SQL in markdown" icon="database">
+    Write SQL queries directly in your markdown files. Query results are automatically available to your components.
+  </Card>
+  
+  <Card title="Interactive components" icon="chart-line">
+    Built-in component library with charts, tables, and UI elements. All components are designed to work seamlessly with your query results.
+  </Card>
+  
+  <Card title="Templated pages" icon="copy">
+    Generate hundreds of pages from a single markdown template. Perfect for creating dashboards for each customer, product, or region.
+  </Card>
+  
+  <Card title="Multiple data sources" icon="plug">
+    Connect to data warehouses (Snowflake, BigQuery, Databricks), databases (Postgres, MySQL, DuckDB), or flat files (CSV, Parquet).
+  </Card>
+</CardGroup>
+
+## How it works
+
+Evidence renders a BI website from markdown files:
+
+1. **Data sources** can include data warehouses, databases, and flat files
+2. **SQL statements** inside markdown files run queries against your data sources
+3. **Charts and components** are rendered using these query results
+4. **Templated pages** generate many pages from a single markdown template
+5. **Loops and conditionals** allow dynamic control of what is displayed to users
+
+## Example: Query and visualize in one file
+
+Here's a simple Evidence page that queries data and creates a chart:
+
+````markdown
+# Sales dashboard
+
+```sql orders_by_month
+select
+    date_trunc('month', order_datetime) as order_month,
+    count(*) as number_of_orders,
+    sum(sales) as sales_usd
+from orders
+group by 1
+order by 1 desc
+```
+
+<LineChart 
+    data={orders_by_month}
+    x="order_month"
+    y="sales_usd" 
+    title="Sales by Month, USD" 
+/>
+````
+
+That's it! Evidence handles the query execution, data formatting, and chart rendering.
+
+## Use cases
+
+<CardGroup cols={3}>
+  <Card title="Internal reports" icon="file-chart-line">
+    Replace static PDF reports with interactive, always-up-to-date dashboards
+  </Card>
+  
+  <Card title="Customer analytics" icon="users">
+    Build embedded analytics for your customers with templated pages
+  </Card>
+  
+  <Card title="Data apps" icon="laptop-code">
+    Create decision-support tools that combine data visualization with business logic
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+To use Evidence you need:
+
+- **SQL knowledge** - Evidence uses SQL for data queries
+- **Basic markdown** - Familiarity with markdown syntax is helpful
+- **Node.js 18+** - Required to run the Evidence development server
+
+## Get started
+
+<CardGroup cols={3}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get a working Evidence app in under 5 minutes
+  </Card>
+  
+  <Card title="Installation" icon="download" href="/installation">
+    Detailed installation instructions for all platforms
+  </Card>
+  
+  <Card title="View examples" icon="images" href="https://evidence.dev/examples">
+    Explore real Evidence apps and use cases
+  </Card>
+</CardGroup>
+
+## Getting help
+
+If you need support:
+
+<CardGroup cols={2}>
+  <Card title="Join our Slack" icon="slack" href="https://slack.evidence.dev">
+    Get help from the Evidence community
+  </Card>
+  
+  <Card title="GitHub Issues" icon="github" href="https://github.com/evidence-dev/evidence/issues">
+    Report bugs or request features
+  </Card>
+</CardGroup>
+
+<Note>
+This documentation site is itself built with Evidence. All examples you see are running live queries and real components.
+</Note>

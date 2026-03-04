@@ -1,0 +1,330 @@
+---
+title: "CSV Files"
+description: "Connect Evidence to CSV and flat files using DuckDB"
+---
+
+## Installation
+
+Install the CSV connector:
+
+```bash
+npm install @evidence-dev/csv
+```
+
+## Configuration
+
+```yaml connection.yaml
+name: csv
+type: csv
+options:
+  options: ""
+```
+
+<Note>
+  The CSV connector uses DuckDB's `read_csv` function under the hood, which automatically detects file structure and types.
+</Note>
+
+## Configuration Parameters
+
+<ParamField path="options" type="string">
+  DuckDB CSV options string (see [DuckDB CSV documentation](https://duckdb.org/docs/data/csv/overview.html))
+</ParamField>
+
+## How It Works
+
+The CSV connector:
+
+1. Looks for `.csv` files in your sources directory
+2. Automatically loads them using DuckDB's CSV reader
+3. Applies auto-detection for delimiters, headers, and data types
+4. Makes the data queryable via SQL
+
+## File Placement
+
+Place CSV files in your sources directory:
+
+```
+your-project/
+  sources/
+    my_connection/
+      connection.yaml
+      sales_data.csv
+      customers.csv
+      queries/
+        *.sql
+```
+
+## Example Queries
+
+### Query a CSV File
+
+Create a `.sql` file that references your CSV:
+
+```sql queries/sales_summary.sql
+SELECT 
+  DATE_TRUNC('month', order_date) as month,
+  SUM(amount) as total_revenue,
+  COUNT(*) as order_count
+FROM 'sales_data.csv'
+GROUP BY 1
+ORDER BY 1 DESC
+```
+
+### Join Multiple CSV Files
+
+```sql queries/customer_orders.sql
+SELECT 
+  c.customer_name,
+  c.segment,
+  COUNT(o.order_id) as order_count,
+  SUM(o.amount) as total_spent
+FROM 'customers.csv' c
+LEFT JOIN 'orders.csv' o
+  ON c.customer_id = o.customer_id
+GROUP BY 1, 2
+ORDER BY 4 DESC
+```
+
+### Filter and Transform
+
+```sql queries/recent_orders.sql
+SELECT 
+  order_id,
+  customer_id,
+  order_date,
+  amount,
+  CASE 
+    WHEN amount >= 1000 THEN 'High Value'
+    WHEN amount >= 500 THEN 'Medium Value'
+    ELSE 'Low Value'
+  END as order_category
+FROM 'orders.csv'
+WHERE order_date >= CURRENT_DATE - INTERVAL 30 DAYS
+ORDER BY order_date DESC
+```
+
+## CSV Options
+
+Customize CSV parsing using the `options` parameter:
+
+```yaml connection.yaml
+name: csv
+type: csv
+options:
+  options: "delim=';', header=true, quote='\"'"
+```
+
+### Common Options
+
+- `delim=','` - Column delimiter (default: auto-detect)
+- `header=true` - First row contains headers (default: auto-detect)
+- `quote='"'` - Quote character (default: `"`)
+- `escape='"'` - Escape character (default: `"`)
+- `skip=0` - Number of lines to skip at the beginning
+- `dateformat='%Y-%m-%d'` - Date format string
+- `timestampformat='%Y-%m-%d %H:%M:%S'` - Timestamp format
+- `nullstr='NULL'` - String representing NULL values
+
+### Example with Custom Options
+
+```yaml connection.yaml
+name: csv_custom
+type: csv
+options:
+  options: "delim='|', header=true, nullstr='N/A', dateformat='%d/%m/%Y'"
+```
+
+<Tip>
+  In most cases, you can leave `options` empty. DuckDB's auto-detection is very good at identifying the correct format.
+</Tip>
+
+## Advanced Features
+
+### Wildcard Patterns
+
+Query multiple files at once:
+
+```sql queries/all_regions.sql
+SELECT 
+  region,
+  SUM(sales) as total_sales
+FROM 'sales_*.csv'
+GROUP BY region
+```
+
+### Glob Patterns
+
+Use glob patterns for flexible file matching:
+
+```sql queries/yearly_data.sql
+SELECT *
+FROM 'data/year=*/month=*/*.csv'
+WHERE year >= 2023
+```
+
+### Column Selection
+
+Select specific columns:
+
+```sql queries/subset.sql
+SELECT 
+  order_id,
+  customer_id,
+  amount
+FROM 'large_dataset.csv'
+LIMIT 1000
+```
+
+### Type Casting
+
+Explicitly cast column types:
+
+```sql queries/with_types.sql
+SELECT 
+  order_id::INTEGER,
+  order_date::DATE,
+  amount::DECIMAL(10,2)
+FROM 'orders.csv'
+```
+
+## CSV File Best Practices
+
+### File Format
+
+- Use UTF-8 encoding
+- Include headers in the first row
+- Use consistent date formats (ISO 8601 recommended: YYYY-MM-DD)
+- Quote fields containing delimiters or newlines
+
+### Example Well-Formatted CSV
+
+```csv sales_data.csv
+order_id,order_date,customer_id,product,quantity,amount
+1001,2024-01-15,C001,Widget A,5,149.99
+1002,2024-01-15,C002,Widget B,2,79.98
+1003,2024-01-16,C001,Widget C,1,299.99
+```
+
+### Optimize for Performance
+
+- Keep files under 100MB for fastest loading
+- For larger datasets, split into multiple files
+- Use consistent column types across files
+- Remove unnecessary columns
+
+## Type Detection
+
+DuckDB automatically detects column types:
+
+- **Numbers**: Integers and decimals
+- **Dates**: ISO 8601 formats (YYYY-MM-DD)
+- **Timestamps**: ISO 8601 with time (YYYY-MM-DD HH:MM:SS)
+- **Strings**: Any non-numeric data
+- **Booleans**: true/false, t/f, yes/no, 1/0
+
+### Override Type Detection
+
+If auto-detection fails, cast explicitly in queries:
+
+```sql
+SELECT 
+  id::INTEGER,
+  created_date::DATE,
+  revenue::DECIMAL(10,2)
+FROM 'data.csv'
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="File not found errors">
+    - Ensure CSV files are in your sources directory
+    - Check file names match exactly (case-sensitive)
+    - Use relative paths from the sources directory
+  </Accordion>
+  
+  <Accordion title="Type detection errors">
+    - Check for inconsistent data types in columns
+    - Look for non-numeric values in numeric columns
+    - Use explicit type casting in queries:
+      ```sql
+      SELECT column_name::INTEGER FROM 'file.csv'
+      ```
+  </Accordion>
+  
+  <Accordion title="Delimiter detection issues">
+    - Specify the delimiter explicitly:
+      ```yaml
+      options: "delim=';'"
+      ```
+    - Common delimiters: `,` (comma), `;` (semicolon), `\t` (tab), `|` (pipe)
+  </Accordion>
+  
+  <Accordion title="Date parsing errors">
+    - Use ISO 8601 format (YYYY-MM-DD) when possible
+    - Specify date format if using different format:
+      ```yaml
+      options: "dateformat='%d/%m/%Y'"
+      ```
+  </Accordion>
+  
+  <Accordion title="Memory errors with large files">
+    - Split large files into smaller chunks
+    - Select only needed columns:
+      ```sql
+      SELECT col1, col2 FROM 'large.csv'
+      ```
+    - Use filtering to reduce data:
+      ```sql
+      SELECT * FROM 'large.csv' WHERE date >= '2024-01-01'
+      ```
+  </Accordion>
+  
+  <Accordion title="Encoding issues">
+    - Ensure files are UTF-8 encoded
+    - Convert files to UTF-8 if needed:
+      ```bash
+      iconv -f ISO-8859-1 -t UTF-8 input.csv > output.csv
+      ```
+  </Accordion>
+</AccordionGroup>
+
+## Converting Other Formats
+
+### Excel to CSV
+
+Export Excel files to CSV format before using with Evidence.
+
+### TSV (Tab-Separated Values)
+
+```yaml connection.yaml
+name: tsv
+type: csv
+options:
+  options: "delim='\t'"
+```
+
+### Pipe-Delimited Files
+
+```yaml connection.yaml
+name: pipe_delimited
+type: csv
+options:
+  options: "delim='|'"
+```
+
+## Migrating to Parquet
+
+For better performance, convert CSV files to Parquet:
+
+```sql
+-- Export CSV to Parquet
+COPY (SELECT * FROM 'data.csv') 
+TO 'data.parquet' (FORMAT PARQUET);
+```
+
+Then use the DuckDB connector to query Parquet files directly:
+
+```sql
+SELECT * FROM 'data.parquet'
+```

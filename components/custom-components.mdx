@@ -1,0 +1,581 @@
+---
+title: Custom Components
+description: Create and use custom Svelte components in your Evidence projects
+---
+
+Evidence supports custom Svelte components, allowing you to extend the built-in component library with your own interactive visualizations and UI elements.
+
+## Why Custom Components?
+
+Custom components are useful when you need to:
+
+- Create specialized visualizations not available in the built-in library
+- Integrate third-party JavaScript libraries
+- Build reusable UI patterns specific to your organization
+- Implement custom business logic or calculations
+- Add advanced interactivity beyond standard inputs
+
+## Creating a Custom Component
+
+Custom components are Svelte files (`.svelte`) placed in your project's `components` directory.
+
+### Project Structure
+
+```
+my-evidence-project/
+├── components/
+│   ├── CustomChart.svelte
+│   ├── MetricCard.svelte
+│   └── DataFilter.svelte
+├── pages/
+│   └── index.md
+└── sources/
+```
+
+### Basic Component Example
+
+Create `components/MetricCard.svelte`:
+
+```svelte
+<script>
+  // Props that can be passed to the component
+  export let title = "Metric";
+  export let value;
+  export let change;
+  export let fmt = "num0";
+  
+  // Determine color based on change
+  $: changeColor = change >= 0 ? 'text-green-600' : 'text-red-600';
+  $: changeIcon = change >= 0 ? '↑' : '↓';
+</script>
+
+<div class="metric-card">
+  <h3 class="text-sm font-medium text-gray-600">{title}</h3>
+  <div class="flex items-baseline gap-2">
+    <span class="text-3xl font-bold">
+      {value.toLocaleString()}
+    </span>
+    {#if change !== undefined}
+      <span class={changeColor}>
+        {changeIcon} {Math.abs(change).toFixed(1)}%
+      </span>
+    {/if}
+  </div>
+</div>
+
+<style>
+  .metric-card {
+    padding: 1.5rem;
+    background: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+  }
+</style>
+```
+
+### Using the Component
+
+In your markdown pages:
+
+```markdown
+```sql revenue_metrics
+SELECT 
+  SUM(revenue) as total_revenue,
+  12.5 as revenue_change_pct
+FROM orders
+```
+
+<MetricCard 
+  title="Total Revenue" 
+  value={revenue_metrics[0].total_revenue}
+  change={revenue_metrics[0].revenue_change_pct}
+/>
+```
+
+## Working with Query Data
+
+Custom components can accept and process query results:
+
+### Component Accepting Data Prop
+
+```svelte
+<!-- components/SimpleTable.svelte -->
+<script>
+  export let data = [];
+  export let columns = [];
+  
+  // Auto-detect columns if not provided
+  $: displayColumns = columns.length > 0 
+    ? columns 
+    : (data.length > 0 ? Object.keys(data[0]) : []);
+</script>
+
+<div class="overflow-x-auto">
+  <table>
+    <thead>
+      <tr>
+        {#each displayColumns as column}
+          <th>{column}</th>
+        {/each}
+      </tr>
+    </thead>
+    <tbody>
+      {#each data as row}
+        <tr>
+          {#each displayColumns as column}
+            <td>{row[column]}</td>
+          {/each}
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  th {
+    font-weight: 600;
+    background-color: #f9fafb;
+  }
+</style>
+```
+
+### Usage
+
+```markdown
+```sql orders
+SELECT 
+  order_id,
+  customer_name,
+  order_date,
+  total
+FROM orders
+LIMIT 10
+```
+
+<SimpleTable data={orders}/>
+```
+
+## Integrating Third-Party Libraries
+
+You can use npm packages in custom components.
+
+### Installing Dependencies
+
+First, install the package:
+
+```bash
+npm install d3-scale
+```
+
+### Using the Library
+
+```svelte
+<!-- components/ColorScale.svelte -->
+<script>
+  import { scaleLinear } from 'd3-scale';
+  
+  export let value;
+  export let min = 0;
+  export let max = 100;
+  export let colors = ['#fee', '#f00'];
+  
+  $: colorScale = scaleLinear()
+    .domain([min, max])
+    .range(colors);
+  
+  $: backgroundColor = colorScale(value);
+</script>
+
+<div class="color-cell" style="background-color: {backgroundColor}">
+  {value}
+</div>
+
+<style>
+  .color-cell {
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+  }
+</style>
+```
+
+## Interactive Components
+
+Create components with internal state and interactions:
+
+```svelte
+<!-- components/ExpandableCard.svelte -->
+<script>
+  export let title;
+  export let data;
+  
+  let expanded = false;
+  
+  function toggle() {
+    expanded = !expanded;
+  }
+</script>
+
+<div class="card">
+  <button class="header" on:click={toggle}>
+    <h3>{title}</h3>
+    <span class="icon">{expanded ? '−' : '+'}</span>
+  </button>
+  
+  {#if expanded}
+    <div class="content">
+      <slot />
+    </div>
+  {/if}
+</div>
+
+<style>
+  .card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  
+  .header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .header:hover {
+    background: #f9fafb;
+  }
+  
+  .content {
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+</style>
+```
+
+## Using Slots
+
+Slots allow you to pass content into components:
+
+```svelte
+<!-- components/Panel.svelte -->
+<script>
+  export let title;
+  export let variant = 'default';
+</script>
+
+<div class="panel panel-{variant}">
+  <div class="panel-header">
+    <h2>{title}</h2>
+    {#if $$slots.actions}
+      <div class="panel-actions">
+        <slot name="actions" />
+      </div>
+    {/if}
+  </div>
+  
+  <div class="panel-body">
+    <slot />
+  </div>
+  
+  {#if $$slots.footer}
+    <div class="panel-footer">
+      <slot name="footer" />
+    </div>
+  {/if}
+</div>
+```
+
+### Usage with Slots
+
+```markdown
+<Panel title="Revenue Analysis" variant="primary">
+  <div slot="actions">
+    <button>Export</button>
+  </div>
+  
+  <!-- Default slot content -->
+  <BarChart data={revenue} x="month" y="total"/>
+  
+  <div slot="footer">
+    Last updated: January 15, 2024
+  </div>
+</Panel>
+```
+
+## Component Props Validation
+
+Validate and provide defaults for props:
+
+```svelte
+<script>
+  export let data;
+  export let title = "Chart";
+  export let width = 600;
+  export let height = 400;
+  export let colorScheme = 'default';
+  
+  // Validation
+  $: if (!data || data.length === 0) {
+    console.warn('No data provided to component');
+  }
+  
+  $: if (width < 200 || height < 200) {
+    console.warn('Chart dimensions may be too small');
+  }
+  
+  // Computed values
+  $: aspectRatio = width / height;
+</script>
+```
+
+## Accessing Evidence Context
+
+Evidence provides context that components can access:
+
+```svelte
+<script>
+  import { getContext } from 'svelte';
+  
+  // Access Evidence theme
+  const { theme } = getContext('evidence');
+  
+  export let data;
+  
+  $: primaryColor = $theme.colors.primary;
+</script>
+
+<div style="color: {primaryColor}">
+  <!-- Component content -->
+</div>
+```
+
+## Exporting Components as a Package
+
+Create reusable component libraries:
+
+### Package Structure
+
+```
+my-components/
+├── package.json
+├── src/
+│   ├── index.js
+│   ├── MetricCard.svelte
+│   └── CustomChart.svelte
+└── README.md
+```
+
+### package.json
+
+```json
+{
+  "name": "@myorg/evidence-components",
+  "version": "1.0.0",
+  "svelte": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "peerDependencies": {
+    "svelte": "^4.0.0"
+  }
+}
+```
+
+### src/index.js
+
+```javascript
+export { default as MetricCard } from './MetricCard.svelte';
+export { default as CustomChart } from './CustomChart.svelte';
+```
+
+## Best Practices
+
+1. **Props over hardcoding** - Make components flexible with props
+2. **Provide defaults** - Set sensible default values for optional props
+3. **Validate inputs** - Check for required props and valid values
+4. **Use TypeScript** - Add type safety with TypeScript
+5. **Document components** - Include JSDoc comments for props
+6. **Keep it simple** - Start simple, add complexity as needed
+7. **Responsive design** - Make components work on all screen sizes
+8. **Accessibility** - Follow ARIA guidelines for interactive components
+
+## TypeScript Support
+
+Use TypeScript for type-safe components:
+
+```svelte
+<script lang="ts">
+  export let data: Array<{date: string, value: number}>;
+  export let title: string = "Chart";
+  export let showLegend: boolean = true;
+  
+  interface ChartConfig {
+    width: number;
+    height: number;
+    margin: { top: number; right: number; bottom: number; left: number };
+  }
+  
+  const config: ChartConfig = {
+    width: 600,
+    height: 400,
+    margin: { top: 20, right: 20, bottom: 30, left: 40 }
+  };
+</script>
+```
+
+## Debugging Components
+
+Use Svelte's reactive debugging:
+
+```svelte
+<script>
+  export let data;
+  
+  // Log when data changes
+  $: console.log('Data updated:', data);
+  
+  // Reactive statement with multiple dependencies
+  $: {
+    console.log('Recalculating chart with:', {
+      dataLength: data?.length,
+      width,
+      height
+    });
+  }
+</script>
+```
+
+## Example: Custom Chart Component
+
+Complete example of a custom chart component:
+
+```svelte
+<!-- components/ProgressChart.svelte -->
+<script>
+  export let data;
+  export let targetColumn = 'target';
+  export let actualColumn = 'actual';
+  export let nameColumn = 'name';
+  export let height = 400;
+  
+  $: maxValue = Math.max(
+    ...data.map(d => Math.max(d[targetColumn], d[actualColumn]))
+  );
+  
+  function getPercentage(value) {
+    return (value / maxValue) * 100;
+  }
+  
+  function getColor(actual, target) {
+    const pct = (actual / target) * 100;
+    if (pct >= 100) return '#10b981';
+    if (pct >= 75) return '#f59e0b';
+    return '#ef4444';
+  }
+</script>
+
+<div class="progress-chart" style="height: {height}px">
+  {#each data as item}
+    <div class="progress-row">
+      <div class="label">{item[nameColumn]}</div>
+      <div class="bars">
+        <div class="bar-container">
+          <div 
+            class="bar target" 
+            style="width: {getPercentage(item[targetColumn])}%"
+          >
+            <span class="bar-label">Target: {item[targetColumn]}</span>
+          </div>
+          <div 
+            class="bar actual" 
+            style="
+              width: {getPercentage(item[actualColumn])}%; 
+              background-color: {getColor(item[actualColumn], item[targetColumn])}
+            "
+          >
+            <span class="bar-label">Actual: {item[actualColumn]}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/each}
+</div>
+
+<style>
+  .progress-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .progress-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .label {
+    flex: 0 0 150px;
+    font-weight: 500;
+  }
+  
+  .bars {
+    flex: 1;
+  }
+  
+  .bar-container {
+    position: relative;
+    height: 40px;
+  }
+  
+  .bar {
+    position: absolute;
+    height: 20px;
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+  
+  .bar.target {
+    top: 0;
+    background-color: #e5e7eb;
+  }
+  
+  .bar.actual {
+    top: 22px;
+  }
+  
+  .bar-label {
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+    line-height: 20px;
+    white-space: nowrap;
+  }
+</style>
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Svelte Documentation" icon="book" href="https://svelte.dev/docs">
+    Learn more about Svelte
+  </Card>
+  <Card title="Component Examples" icon="code" href="/components/overview">
+    Browse built-in components
+  </Card>
+</CardGroup>

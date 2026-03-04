@@ -1,0 +1,322 @@
+---
+title: ScatterPlot
+description: Display data points on a two-dimensional chart to show relationships between variables
+---
+
+# ScatterPlot
+
+The `ScatterPlot` component visualizes individual data points on a two-dimensional chart, making it ideal for showing correlations, distributions, and relationships between two variables.
+
+## Props
+
+### Data Props
+
+<ParamField path="data" type="Query | array" required>
+  Query result or array of objects containing the data to visualize
+</ParamField>
+
+<ParamField path="x" type="string" required>
+  Column name for the x-axis values
+</ParamField>
+
+<ParamField path="y" type="string" required>
+  Column name for the y-axis values
+</ParamField>
+
+<ParamField path="series" type="string">
+  Column name to group data into multiple series
+</ParamField>
+
+### Point Style Props
+
+<ParamField path="shape" type="string">
+  Shape of points: 'circle' | 'square' | 'triangle' | 'diamond' | 'pin' | 'arrow'
+</ParamField>
+
+<ParamField path="pointSize" type="number">
+  Size of the points in pixels
+</ParamField>
+
+<ParamField path="fillColor" type="string">
+  Fill color for points (hex, rgb, or theme color name)
+</ParamField>
+
+<ParamField path="opacity" type="number">
+  Opacity of points (0-1). Note: affects both fill and outline due to ECharts limitation
+</ParamField>
+
+<ParamField path="outlineColor" type="string">
+  Color for point outlines
+</ParamField>
+
+<ParamField path="outlineWidth" type="number">
+  Width of point outlines in pixels
+</ParamField>
+
+### Formatting Props
+
+<ParamField path="xFmt" type="string">
+  Format string for x-axis values
+</ParamField>
+
+<ParamField path="yFmt" type="string">
+  Format string for y-axis values
+</ParamField>
+
+### Chart Layout Props
+
+<ParamField path="title" type="string">
+  Chart title displayed at the top
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  Chart subtitle displayed below the title
+</ParamField>
+
+<ParamField path="legend" type="boolean">
+  Whether to show the legend
+</ParamField>
+
+<ParamField path="chartAreaHeight" type="number">
+  Height of the chart area in pixels
+</ParamField>
+
+### Axis Props
+
+<ParamField path="xAxisTitle" type="string | boolean" default="true">
+  Title for x-axis. Use `true` to use column name
+</ParamField>
+
+<ParamField path="yAxisTitle" type="string | boolean" default="true">
+  Title for y-axis. Use `true` to use column name
+</ParamField>
+
+<ParamField path="xGridlines" type="boolean">
+  Show vertical gridlines
+</ParamField>
+
+<ParamField path="yGridlines" type="boolean">
+  Show horizontal gridlines
+</ParamField>
+
+<ParamField path="xAxisLabels" type="boolean">
+  Show labels on x-axis
+</ParamField>
+
+<ParamField path="yAxisLabels" type="boolean">
+  Show labels on y-axis
+</ParamField>
+
+<ParamField path="xBaseline" type="boolean">
+  Show x-axis baseline
+</ParamField>
+
+<ParamField path="yBaseline" type="boolean">
+  Show y-axis baseline
+</ParamField>
+
+<ParamField path="xTickMarks" type="boolean">
+  Show tick marks on x-axis
+</ParamField>
+
+<ParamField path="yTickMarks" type="boolean">
+  Show tick marks on y-axis
+</ParamField>
+
+### Axis Scale Props
+
+<ParamField path="xType" type="string">
+  Type of x-axis: 'category' | 'time' | 'value'
+</ParamField>
+
+<ParamField path="yLog" type="boolean">
+  Use logarithmic scale for y-axis
+</ParamField>
+
+<ParamField path="yLogBase" type="number">
+  Base for logarithmic y-axis
+</ParamField>
+
+<ParamField path="xMin" type="number">
+  Minimum value for x-axis
+</ParamField>
+
+<ParamField path="xMax" type="number">
+  Maximum value for x-axis
+</ParamField>
+
+<ParamField path="yMin" type="number">
+  Minimum value for y-axis
+</ParamField>
+
+<ParamField path="yMax" type="number">
+  Maximum value for y-axis
+</ParamField>
+
+### Tooltip Props
+
+<ParamField path="tooltipTitle" type="string">
+  Custom title for tooltip
+</ParamField>
+
+### Series Props
+
+<ParamField path="colorPalette" type="string | array" default="default">
+  Color palette name or array of colors
+</ParamField>
+
+<ParamField path="seriesColors" type="object">
+  Object mapping series names to colors
+</ParamField>
+
+<ParamField path="seriesOrder" type="array">
+  Array specifying the order of series
+</ParamField>
+
+<ParamField path="seriesLabelFmt" type="string">
+  Format string for series labels
+</ParamField>
+
+### Behavior Props
+
+<ParamField path="sort" type="boolean">
+  Sort data before rendering
+</ParamField>
+
+<ParamField path="connectGroup" type="string">
+  Connect charts for synchronized interactions
+</ParamField>
+
+### Advanced Props
+
+<ParamField path="echartsOptions" type="object">
+  Custom ECharts configuration object
+</ParamField>
+
+<ParamField path="seriesOptions" type="object">
+  Custom series configuration
+</ParamField>
+
+<ParamField path="printEchartsConfig" type="boolean" default={false}>
+  Print ECharts config to console
+</ParamField>
+
+<ParamField path="renderer" type="string">
+  Renderer type: 'canvas' | 'svg'
+</ParamField>
+
+<ParamField path="downloadableData" type="boolean">
+  Enable data download
+</ParamField>
+
+<ParamField path="downloadableImage" type="boolean">
+  Enable image download
+</ParamField>
+
+<ParamField path="emptySet" type="string">
+  Empty data behavior: 'pass' | 'warn' | 'error'
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom empty data message
+</ParamField>
+
+<ParamField path="leftPadding" type="number">
+  Left padding for chart area
+</ParamField>
+
+<ParamField path="rightPadding" type="number">
+  Right padding for chart area
+</ParamField>
+
+## Examples
+
+### Basic Scatter Plot
+
+```markdown
+```sql customer_metrics
+select 
+  customer_id,
+  total_orders,
+  lifetime_value
+from customers
+```
+
+<ScatterPlot 
+  data={customer_metrics} 
+  x="total_orders" 
+  y="lifetime_value" 
+/>
+```
+
+### Scatter Plot with Series
+
+```markdown
+```sql product_performance
+select 
+  product_name,
+  price,
+  units_sold,
+  category
+from products
+```
+
+<ScatterPlot 
+  data={product_performance} 
+  x="price" 
+  y="units_sold" 
+  series="category"
+  title="Product Performance by Category"
+  xAxisTitle="Price"
+  yAxisTitle="Units Sold"
+/>
+```
+
+### Customized Point Styling
+
+```markdown
+<ScatterPlot 
+  data={customer_metrics} 
+  x="total_orders" 
+  y="lifetime_value"
+  shape="diamond"
+  pointSize=12
+  fillColor="primary"
+  opacity=0.7
+  xFmt="#,##0"
+  yFmt="usd"
+/>
+```
+
+### Multiple Series with Custom Colors
+
+```markdown
+<ScatterPlot 
+  data={product_performance} 
+  x="price" 
+  y="units_sold" 
+  series="category"
+  seriesColors={{
+    'Electronics': '#4F46E5',
+    'Clothing': '#7C3AED',
+    'Food': '#DB2777'
+  }}
+  pointSize=10
+  xGridlines="true"
+  yGridlines="true"
+/>
+```
+
+### Logarithmic Scale
+
+```markdown
+<ScatterPlot 
+  data={website_traffic} 
+  x="pageviews" 
+  y="conversion_rate"
+  yLog="true"
+  title="Traffic vs Conversion (Log Scale)"
+  xFmt="#,##0"
+  yFmt="pct2"
+/>
+```

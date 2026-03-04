@@ -1,0 +1,588 @@
+---
+title: Customizing Your App's Appearance
+description: Style your Evidence app with custom CSS, themes, and branding
+---
+
+Evidence apps are fully customizable. This guide covers everything from basic styling tweaks to complete brand transformations.
+
+## Styling Basics
+
+Evidence uses:
+- **Tailwind CSS** - Utility-first CSS framework
+- **Custom CSS** - Your own styles in `src/app.css`
+- **Component Props** - Built-in styling options on components
+- **Themes** - Light and dark mode support
+
+## Quick Styling with Component Props
+
+Many components accept styling props:
+
+### Chart Colors
+
+```markdown
+<LineChart 
+  data={orders_by_month}
+  x="month"
+  y="sales"
+  lineColor="red"
+/>
+
+<AreaChart 
+  data={orders_by_month}
+  x="month"
+  y="sales"
+  colorPalette={['#cf0d06', '#eb5752', '#e88a87']}
+/>
+```
+
+### Chart Sizing
+
+```markdown
+<BarChart 
+  data={categories}
+  x="category"
+  y="sales"
+  chartAreaHeight=500
+/>
+```
+
+### BigValue Styling
+
+```markdown
+<BigValue 
+  data={summary}
+  value="total_revenue"
+  sparklineColor="navy"
+  neutralMin=-0.05
+  neutralMax=0.05
+/>
+```
+
+## Custom CSS
+
+<Steps>
+
+<Step title="Edit app.css">
+
+Your global styles live in `src/app.css`. This file is automatically loaded on every page.
+
+```css src/app.css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Your custom styles */
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply text-gray-900;
+  }
+}
+```
+
+</Step>
+
+<Step title="Add Custom Classes">
+
+Create reusable CSS classes:
+
+```css src/app.css
+@layer components {
+  .dashboard-card {
+    @apply bg-white rounded-lg shadow-md p-6 mb-4;
+  }
+  
+  .metric-highlight {
+    @apply text-3xl font-bold text-blue-600;
+  }
+  
+  .section-header {
+    @apply text-xl font-semibold mb-4 border-b pb-2;
+  }
+}
+```
+
+Use in your pages:
+
+```markdown
+<div class="dashboard-card">
+  <h2 class="section-header">Revenue Summary</h2>
+  <p class="metric-highlight">$1.2M</p>
+</div>
+```
+
+</Step>
+
+<Step title="Style Markdown Elements">
+
+Customize how markdown renders:
+
+```css src/app.css
+@layer components {
+  /* Headings */
+  h1.markdown {
+    @apply text-3xl font-bold mb-4 text-blue-900;
+  }
+  
+  h2.markdown {
+    @apply text-2xl font-semibold mb-3 mt-8 text-gray-800;
+  }
+  
+  /* Links */
+  article.markdown a.markdown {
+    @apply text-blue-600 underline hover:text-blue-800;
+  }
+  
+  /* Code blocks */
+  code.markdown {
+    @apply bg-gray-100 border border-gray-300 rounded px-2 py-1 font-mono;
+  }
+  
+  /* Blockquotes */
+  blockquote.markdown {
+    @apply bg-blue-50 border-l-4 border-blue-500 pl-4 py-2 italic;
+  }
+}
+```
+
+</Step>
+
+</Steps>
+
+## Real Example: Custom Styling
+
+Here's the styling from the Evidence example project:
+
+```css src/app.css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply select-none;
+  }
+
+  /* Default border color */
+  * {
+    @apply border-base-300;
+  }
+
+  /* Scrollbar styling */
+  .pretty-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.base-300') transparent;
+  }
+
+  .pretty-scrollbar::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+
+  .pretty-scrollbar::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  .pretty-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 7px;
+  }
+
+  .pretty-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: theme('colors.base-200');
+  }
+}
+
+@layer components {
+  .markdown {
+    @apply leading-normal font-sans text-base antialiased;
+  }
+
+  h1.markdown {
+    @apply mt-5 mb-1 text-2xl tracking-wide font-bold;
+  }
+
+  h2.markdown {
+    @apply mt-3 mb-1 text-xl font-semibold;
+  }
+
+  h3.markdown {
+    @apply mt-2 mb-1 font-semibold text-base;
+  }
+
+  article.markdown a.markdown {
+    @apply text-primary underline decoration-transparent 
+           hover:decoration-primary transition-all duration-200;
+  }
+}
+```
+
+## Tailwind Configuration
+
+Customize Tailwind in `tailwind.config.cjs`:
+
+```javascript tailwind.config.cjs
+module.exports = {
+  content: ['./src/**/*.{html,js,svelte,md}'],
+  theme: {
+    extend: {
+      colors: {
+        // Brand colors
+        primary: '#0066cc',
+        secondary: '#ff6b6b',
+        accent: '#4ecdc4',
+        
+        // Custom grays
+        'gray-custom': {
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          // ... more shades
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['Fira Code', 'monospace'],
+      },
+      spacing: {
+        '128': '32rem',
+        '144': '36rem',
+      },
+    },
+  },
+  plugins: [],
+}
+```
+
+Use your custom values:
+
+```markdown
+<div class="bg-primary text-white p-4">
+  Custom branded section
+</div>
+```
+
+## Themes and Dark Mode
+
+Evidence supports light and dark themes:
+
+```css src/app.css
+/* Dark mode customization */
+[data-theme='dark'] {
+  /* Override dark mode colors */
+}
+
+/* Light mode specific */
+[data-theme='light'] {
+  /* Override light mode colors */
+}
+```
+
+Example dark mode map styling:
+
+```css
+[data-theme='dark'] .__evidence-leaflet-tile-layer__ {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+```
+
+## CSS Variables
+
+Define reusable values:
+
+```css src/app.css
+:root {
+  /* Layout */
+  --header-height: 3.5rem;
+  
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Fira Code', monospace;
+  
+  /* Brand colors */
+  --color-primary: #0066cc;
+  --color-secondary: #ff6b6b;
+  
+  /* Spacing */
+  --spacing-section: 2rem;
+  --spacing-card: 1.5rem;
+}
+
+/* Use variables */
+.dashboard-section {
+  padding: var(--spacing-section);
+  font-family: var(--font-sans);
+}
+
+.card {
+  padding: var(--spacing-card);
+  border-color: var(--color-primary);
+}
+```
+
+## Layout Customization
+
+Customize your app's layout in `src/pages/+layout.svelte`:
+
+```svelte src/pages/+layout.svelte
+<script>
+  // Your custom layout logic
+</script>
+
+<div class="app-container">
+  <header class="custom-header">
+    <h1>My Company Analytics</h1>
+  </header>
+  
+  <main class="content">
+    <slot /> <!-- Your pages render here -->
+  </main>
+  
+  <footer class="custom-footer">
+    <p>&copy; 2024 My Company</p>
+  </footer>
+</div>
+
+<style>
+  .app-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .custom-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+  }
+  
+  .content {
+    flex: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  
+  .custom-footer {
+    background: #f8f9fa;
+    padding: 1rem;
+    text-align: center;
+  }
+</style>
+```
+
+## Component-Specific Styling
+
+### Tables
+
+```css
+table.markdown {
+  @apply w-full border-collapse shadow-sm;
+}
+
+th.markdown {
+  @apply bg-blue-600 text-white font-semibold py-3 px-4;
+}
+
+td.markdown {
+  @apply border-b border-gray-200 py-2 px-4;
+}
+
+tr.markdown:hover {
+  @apply bg-gray-50;
+}
+```
+
+### Lists
+
+```css
+ul.markdown {
+  @apply list-disc pl-6 space-y-2;
+}
+
+ol.markdown {
+  @apply list-decimal pl-6 space-y-2;
+}
+
+li.markdown {
+  @apply text-gray-700;
+}
+```
+
+### Code Blocks
+
+```css
+pre.markdown {
+  @apply bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto;
+}
+
+code.markdown {
+  @apply font-mono text-sm;
+}
+```
+
+## Print Styles
+
+Optimize for printing:
+
+```css src/app.css
+@media print {
+  html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Prevent breaks inside headings */
+  h1, h2, h3, h4 {
+    break-after: avoid-page;
+  }
+
+  /* Hide navigation */
+  nav {
+    display: none;
+  }
+  
+  /* Optimize charts for print */
+  .chart-container {
+    break-inside: avoid;
+  }
+}
+```
+
+## Advanced: Custom Components
+
+Create reusable styled components:
+
+`src/components/StyledCard.svelte`:
+
+```svelte
+<script>
+  export let title = '';
+  export let variant = 'default'; // default, primary, success
+</script>
+
+<div class="card {variant}">
+  {#if title}
+    <h3 class="card-title">{title}</h3>
+  {/if}
+  <div class="card-content">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+  }
+  
+  .card.primary {
+    border-left: 4px solid #0066cc;
+  }
+  
+  .card.success {
+    border-left: 4px solid #10b981;
+  }
+  
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #1f2937;
+  }
+</style>
+```
+
+Use in your pages:
+
+```markdown
+<script>
+  import StyledCard from '$lib/components/StyledCard.svelte';
+</script>
+
+<StyledCard title="Revenue" variant="primary">
+  <BigValue data={summary} value="total_revenue" />
+</StyledCard>
+```
+
+## Best Practices
+
+### Organization
+
+- **Use layers** - Keep Tailwind utilities separate from custom CSS
+- **Component-based** - Create reusable styled components
+- **Variables** - Use CSS variables for consistency
+- **Mobile-first** - Design for mobile, enhance for desktop
+
+### Performance
+
+- **Minimize custom CSS** - Prefer Tailwind utilities when possible
+- **Optimize fonts** - Subset custom fonts to include only needed characters
+- **Remove unused styles** - Tailwind's purge removes unused classes
+
+### Consistency
+
+- **Design system** - Define colors, spacing, and typography once
+- **Naming conventions** - Use clear, descriptive class names
+- **Documentation** - Comment complex styling decisions
+
+## Troubleshooting
+
+### Styles Not Applying
+
+**Check specificity**: Evidence's default styles may override yours. Use `!important` sparingly:
+
+```css
+.my-heading {
+  color: blue !important;
+}
+```
+
+**Verify layer order**: Ensure your custom styles are in the correct layer:
+
+```css
+@layer components {
+  /* Your styles here */
+}
+```
+
+### Tailwind Classes Not Working
+
+**Content paths**: Ensure `tailwind.config.cjs` includes all file types:
+
+```javascript
+content: ['./src/**/*.{html,js,svelte,md,mdx}'],
+```
+
+**Rebuild**: Restart your dev server after config changes
+
+### Dark Mode Issues
+
+Test both themes:
+
+```css
+[data-theme='dark'] .my-element {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+[data-theme='light'] .my-element {
+  background: white;
+  color: #1f2937;
+}
+```
+
+## Next Steps
+
+- [Component documentation](/components) - Learn about all available components
+- [Deployment](/deployment) - Deploy your styled app
+- [Examples](/examples) - See styled apps in action

@@ -1,0 +1,238 @@
+---
+title: 'DataTable'
+description: 'Display tabular data with sorting, searching, grouping, and pagination'
+---
+
+## Overview
+
+The `DataTable` component displays query results in a formatted, interactive table with features like sorting, searching, pagination, grouping, and custom column formatting.
+
+## Basic Usage
+
+```jsx
+<DataTable data={query_result} />
+```
+
+## With Column Configuration
+
+```jsx
+<DataTable data={flights} search sortable rows={20}>
+  <Column id="airline" title="Airline" />
+  <Column id="departure_airport" title="Departure" />
+  <Column id="fare" fmt="usd" contentType="bar" />
+</DataTable>
+```
+
+## With Grouping
+
+```jsx
+<DataTable 
+  data={sales_data} 
+  groupBy="region" 
+  subtotals 
+  totalRow
+>
+  <Column id="region" />
+  <Column id="sales" fmt="usd" />
+  <Column id="orders" />
+</DataTable>
+```
+
+## Props
+
+<ParamField path="data" type="Query" required>
+  Query result containing the data to display. Can be a Query object or array of objects.
+</ParamField>
+
+<ParamField path="rows" type="number" default="10">
+  Number of rows to display per page.
+</ParamField>
+
+<ParamField path="title" type="string">
+  Title displayed above the table.
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  Subtitle displayed below the title.
+</ParamField>
+
+<ParamField path="rowNumbers" type="boolean" default="false">
+  Show row numbers in the first column.
+</ParamField>
+
+### Sorting
+
+<ParamField path="sort" type="string">
+  Initial sort column and direction. Format: `"column_name"` or `"column_name desc"`.
+</ParamField>
+
+<ParamField path="sortable" type="boolean" default="true">
+  Enable column sorting by clicking headers.
+</ParamField>
+
+### Search and Filtering
+
+<ParamField path="search" type="boolean" default="false">
+  Enable search bar for filtering table data. Requires Query object.
+</ParamField>
+
+### Grouping
+
+<ParamField path="groupBy" type="string">
+  Column name to group rows by.
+</ParamField>
+
+<ParamField path="groupType" type="'accordion' | 'section'" default="'accordion'">
+  Display style for grouped rows. `accordion` shows collapsible groups, `section` shows groups as table sections.
+</ParamField>
+
+<ParamField path="groupsOpen" type="boolean" default="true">
+  Initial state for grouped rows (open or closed).
+</ParamField>
+
+<ParamField path="groupNamePosition" type="'middle' | 'top' | 'bottom'" default="'middle'">
+  Vertical alignment of group name in section mode.
+</ParamField>
+
+<ParamField path="subtotals" type="boolean" default="false">
+  Show subtotal row for each group.
+</ParamField>
+
+<ParamField path="totalRow" type="boolean" default="false">
+  Show total row at bottom of table.
+</ParamField>
+
+### Table Features
+
+<ParamField path="downloadable" type="boolean" default="true">
+  Show download button to export table data.
+</ParamField>
+
+<ParamField path="link" type="string">
+  Column name containing URLs to make rows clickable.
+</ParamField>
+
+<ParamField path="showLinkCol" type="boolean" default="false">
+  Show the link column in the table (by default it's hidden).
+</ParamField>
+
+### Styling
+
+<ParamField path="rowShading" type="boolean" default="false">
+  Alternate row background colors.
+</ParamField>
+
+<ParamField path="rowLines" type="boolean" default="true">
+  Show lines between rows.
+</ParamField>
+
+<ParamField path="compact" type="boolean">
+  Use compact row spacing.
+</ParamField>
+
+<ParamField path="wrapTitles" type="boolean" default="false">
+  Allow column titles to wrap to multiple lines.
+</ParamField>
+
+<ParamField path="formatColumnTitles" type="boolean" default="true">
+  Automatically format column titles (e.g., `snake_case` to `Snake Case`).
+</ParamField>
+
+<ParamField path="headerColor" type="string">
+  Background color for table header.
+</ParamField>
+
+<ParamField path="headerFontColor" type="string">
+  Font color for table header.
+</ParamField>
+
+<ParamField path="backgroundColor" type="string">
+  Background color for table body.
+</ParamField>
+
+<ParamField path="accordionRowColor" type="string">
+  Background color for accordion group rows.
+</ParamField>
+
+<ParamField path="subtotalRowColor" type="string">
+  Background color for subtotal rows.
+</ParamField>
+
+<ParamField path="subtotalFontColor" type="string">
+  Font color for subtotal rows.
+</ParamField>
+
+<ParamField path="totalRowColor" type="string">
+  Background color for total row.
+</ParamField>
+
+<ParamField path="totalFontColor" type="string">
+  Font color for total row.
+</ParamField>
+
+### Error Handling
+
+<ParamField path="emptySet" type="'pass' | 'warn' | 'error'">
+  How to handle empty datasets.
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom message to display when dataset is empty.
+</ParamField>
+
+## Column Component
+
+Use nested `<Column>` components to customize individual columns:
+
+```jsx
+<DataTable data={sales}>
+  <Column id="product" title="Product Name" />
+  <Column id="revenue" fmt="usd" contentType="bar" />
+  <Column id="date" fmt="mmm d, yyyy" />
+</DataTable>
+```
+
+## Examples
+
+### Sortable Table with Search
+
+```jsx
+<DataTable 
+  data={flights} 
+  search 
+  sort="fare desc" 
+  rows={20}
+>
+  <Column id="airline" />
+  <Column id="departure_airport" />
+  <Column id="arrival_airport" />
+  <Column id="fare" fmt="usd" />
+</DataTable>
+```
+
+### Grouped Table with Subtotals
+
+```jsx
+<DataTable 
+  data={sales} 
+  groupBy="category" 
+  subtotals 
+  totalRow
+  groupType="section"
+>
+  <Column id="category" />
+  <Column id="item" />
+  <Column id="sales" fmt="usd" />
+  <Column id="orders" />
+</DataTable>
+```
+
+### Bar Chart Column
+
+```jsx
+<DataTable data={metrics}>
+  <Column id="category" />
+  <Column id="value" contentType="bar" fmt="usd" hideLabels="false" />
+  <Column id="orders" contentType="bar" hideLabels="false" align="left" />
+</DataTable>
+```

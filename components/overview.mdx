@@ -1,0 +1,115 @@
+---
+title: Components Overview
+description: A comprehensive guide to all Evidence components for building interactive data applications
+---
+
+Evidence provides a rich set of components for building interactive data applications. These components are designed to work seamlessly with SQL queries and make it easy to create professional dashboards and reports.
+
+## Component Categories
+
+Evidence components are organized into the following categories:
+
+<CardGroup cols={2}>
+  <Card title="Charts" icon="chart-line" href="/components/charts">
+    Visualize your data with bar charts, line charts, area charts, scatter plots, and more
+  </Card>
+  
+  <Card title="Tables" icon="table" href="/components/tables">
+    Display and explore data with interactive tables, column formatting, and aggregations
+  </Card>
+  
+  <Card title="Text & Layout" icon="align-left" href="/components/text-and-layout">
+    Format your pages with big values, metrics, grids, tabs, and accordions
+  </Card>
+  
+  <Card title="Inputs" icon="sliders" href="/components/inputs">
+    Add interactivity with dropdowns, date pickers, text inputs, and buttons
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+All Evidence components follow a similar pattern:
+
+1. **Query your data** using SQL code blocks
+2. **Pass data to components** using the `data` prop
+3. **Configure components** with props like `x`, `y`, `title`, etc.
+
+### Basic Example
+
+```markdown
+```sql orders_by_month
+SELECT 
+  DATE_TRUNC('month', order_date) as month,
+  SUM(revenue) as total_revenue
+FROM orders
+GROUP BY 1
+ORDER BY 1
+```
+
+<LineChart 
+  data={orders_by_month}
+  x="month"
+  y="total_revenue"
+  title="Monthly Revenue Trend"
+/>
+```
+
+## Component Props
+
+Most Evidence components accept common props:
+
+- `data` - The query result to visualize
+- `title` - Component title
+- `subtitle` - Component subtitle
+
+### Chart-specific Props
+
+- `x` - Column name for x-axis
+- `y` - Column name for y-axis
+- `series` - Column name for series grouping
+- `xAxisTitle` / `yAxisTitle` - Axis labels
+- `legend` - Show/hide legend
+
+### Styling Props
+
+- `colorPalette` - Color scheme for charts
+- `fillColor` / `fillOpacity` - Fill styling
+- `chartAreaHeight` - Chart height in pixels
+
+## Data Formatting
+
+Evidence automatically formats data based on column names and types. You can also use the `fmt` prop:
+
+- `fmt=usd` - Currency formatting
+- `fmt=pct` - Percentage formatting
+- `fmt=num0` - Number with 0 decimal places
+
+See the individual component pages for detailed documentation on each component type.
+
+## Custom Components
+
+Need something beyond the built-in components? Evidence supports custom Svelte components. See [Custom Components](/components/custom-components) for details.
+
+## Interactive Features
+
+Many components support interactive features:
+
+- **Click events** - Respond to user interactions
+- **Filtering** - Connect inputs to filter data
+- **Connected charts** - Synchronize across visualizations
+- **Downloadable data** - Export charts and tables
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Charts" icon="chart-bar" href="/components/charts">
+    Explore chart components
+  </Card>
+  <Card title="Tables" icon="table-cells" href="/components/tables">
+    Learn about data tables
+  </Card>
+  <Card title="Inputs" icon="toggle-on" href="/components/inputs">
+    Add user inputs
+  </Card>
+</CardGroup>

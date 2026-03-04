@@ -1,0 +1,713 @@
+---
+title: Creating Datasource Plugins
+description: Build custom data source connectors for Evidence
+---
+
+# Creating Datasource Plugins
+
+Datasource plugins allow Evidence to connect to databases and data sources. This guide walks through creating a custom datasource plugin.
+
+## Plugin Structure
+
+A datasource plugin is an npm package that exports specific functions and configuration.
+
+### Required Package Structure
+
+```
+@your-org/evidence-datasource/
+├── package.json
+├── index.cjs          # Main entry point
+├── README.md
+└── test/
+    └── test.js
+```
+
+### Package Configuration
+
+```json package.json
+{
+  "name": "@your-org/evidence-datasource",
+  "version": "1.0.0",
+  "description": "Custom datasource for Evidence",
+  "main": "index.cjs",
+  "type": "module",
+  "evidence": {
+    "datasources": [
+      "customdb",              // Primary name
+      ["custom", "customsql"] // Aliases
+    ],
+    "icon": "Database"        // Icon from supported libraries
+  },
+  "keywords": [
+    "evidence",
+    "evidence-datasource"
+  ],
+  "dependencies": {
+    "@evidence-dev/db-commons": "^1.0.0"
+  }
+}
+```
+
+<Info>
+The first item in each datasources array is the canonical name shown in the UI. Additional items are aliases.
+</Info>
+
+## Required Exports
+
+Every datasource plugin must export three main items:
+
+### 1. Query Runner Function
+
+```javascript index.cjs
+/**
+ * @typedef {Object} CustomDBOptions
+ * @property {string} host
+ * @property {number} port
+ * @property {string} database
+ * @property {string} username
+ * @property {string} password
+ */
+
+/**
+ * Execute a query and return results
+ * @type {import('@evidence-dev/db-commons').RunQuery<CustomDBOptions>}
+ */
+const runQuery = async (queryString, database, batchSize = 100000) => {
+  try {
+    // Create database connection
+    const client = await createConnection(database);
+    
+    // Execute query
+    const results = await client.query(queryString);
+    
+    return {
+      // Return rows as array or async generator
+      rows: results.rows,
+      
+      // Column metadata
+      columnTypes: results.fields.map(field => ({
+        name: field.name.toLowerCase(),
+        evidenceType: mapToEvidenceType(field.type),
+        typeFidelity: 'precise' // or 'inferred'
+      })),
+      
+      // Optional: expected row count
+      expectedRowCount: results.rowCount
+    };
+  } catch (err) {
+    throw new Error(`Query failed: ${err.message}`);
+  }
+};
+
+module.exports = runQuery;
+```
+
+### 2. Get Runner Factory
+
+```javascript
+/**
+ * Create a query runner with the given options
+ * @type {import('@evidence-dev/db-commons').GetRunner<CustomDBOptions>}
+ */
+module.exports.getRunner = async (opts) => {
+  // Validate options
+  if (!opts.host || !opts.database) {
+    throw new Error('Missing required connection options');
+  }
+  
+  return async (queryContent, queryPath, batchSize) => {
+    // Filter files by extension
+    if (!queryPath.endsWith('.sql')) return null;
+    
+    // Execute query
+    return runQuery(queryContent, opts, batchSize);
+  };
+};
+```
+
+### 3. Connection Tester
+
+```javascript
+/**
+ * Test the database connection
+ * @type {import('@evidence-dev/db-commons').ConnectionTester<CustomDBOptions>}
+ */
+module.exports.testConnection = async (opts) => {
+  return await runQuery('SELECT 1;', opts, 1, true)
+    .then(() => true)
+    .catch((e) => ({ 
+      reason: e.message ?? 'Connection failed' 
+    }));
+};
+```
+
+### 4. Options Schema
+
+```javascript
+module.exports.options = {
+  host: {
+    title: 'Host',
+    type: 'string',
+    secret: false,
+    description: 'Database hostname',
+    default: 'localhost',
+    required: true
+  },
+  port: {
+    title: 'Port',
+    type: 'number',
+    secret: false,
+    description: 'Database port',
+    default: 5432,
+    required: true
+  },
+  database: {
+    title: 'Database',
+    type: 'string',
+    secret: false,
+    description: 'Database name',
+    required: true
+  },
+  username: {
+    title: 'Username',
+    type: 'string',
+    secret: true,
+    description: 'Database user',
+    required: true
+  },
+  password: {
+    title: 'Password',
+    type: 'string',
+    secret: true,
+    description: 'User password',
+    required: true
+  },
+  ssl: {
+    title: 'Enable SSL',
+    type: 'boolean',
+    secret: false,
+    description: 'Use SSL connection',
+    nest: true,
+    children: {
+      [true]: {
+        sslmode: {
+          title: 'SSL Mode',
+          type: 'select',
+          options: [
+            'require',
+            { value: 'verify-ca', label: 'Verify CA' },
+            { value: 'verify-full', label: 'Verify Full' }
+          ]
+        }
+      }
+    }
+  }
+};
+```
+
+## Options Schema Reference
+
+### Field Types
+
+| Type | Description | Example |
+|------|-------------|----------|
+| `string` | Single-line text input | `"localhost"` |
+| `multiline` | Multi-line text area | SQL queries |
+| `number` | Numeric input | `5432` |
+| `boolean` | Checkbox | `true` / `false` |
+| `select` | Dropdown menu | List of options |
+| `file` | File upload | Certificate files |
+
+### Field Properties
+
+```typescript
+interface DatasourceOptionSpec {
+  title: string;              // Display name
+  type: 'string' | 'number' | 'boolean' | 'select' | 'file' | 'multiline';
+  secret?: boolean;           // Hide from source control
+  shown?: boolean;            // Override secret hiding
+  description?: string;       // Help text
+  default?: string | number | boolean;
+  required?: boolean;         // Is field required
+  
+  // Advanced options
+  virtual?: boolean;          // Don't persist, used for form logic
+  references?: string;        // Get value from another field
+  forceReference?: boolean;   // Only use referenced value
+  fileFormat?: 'json' | 'yaml';
+  
+  // Conditional fields
+  nest?: boolean;
+  children?: Record<string | number, Record<string, DatasourceOptionSpec>>;
+  
+  // For select type
+  options?: Array<string | { value: any, label: string }>;
+}
+```
+
+### Nested Options Example
+
+```javascript
+ssl: {
+  title: 'Enable SSL',
+  type: 'boolean',
+  nest: true,
+  children: {
+    // Show these fields when ssl is true
+    [true]: {
+      certFile: {
+        title: 'Certificate File',
+        type: 'file',
+        fileFormat: 'json',
+        description: 'SSL certificate'
+      },
+      rejectUnauthorized: {
+        title: 'Reject Unauthorized',
+        type: 'boolean',
+        default: true
+      }
+    }
+  }
+}
+```
+
+## Query Results Interface
+
+### Evidence Type Mapping
+
+Map database types to Evidence types:
+
+```javascript
+const { EvidenceType, TypeFidelity } = require('@evidence-dev/db-commons');
+
+function mapToEvidenceType(dbType) {
+  switch (dbType) {
+    case 'INTEGER':
+    case 'BIGINT':
+    case 'DECIMAL':
+    case 'FLOAT':
+      return EvidenceType.NUMBER;
+    
+    case 'VARCHAR':
+    case 'TEXT':
+    case 'JSON':
+      return EvidenceType.STRING;
+    
+    case 'BOOLEAN':
+      return EvidenceType.BOOLEAN;
+    
+    case 'DATE':
+    case 'TIMESTAMP':
+    case 'TIMESTAMPTZ':
+      return EvidenceType.DATE;
+    
+    default:
+      return EvidenceType.STRING; // Fallback
+  }
+}
+```
+
+### Column Types Schema
+
+```typescript
+interface ColumnDefinition {
+  name: string;              // Column name (lowercase)
+  evidenceType: 'boolean' | 'number' | 'string' | 'date';
+  typeFidelity: 'precise' | 'inferred';
+}
+```
+
+### Result Formats
+
+#### Array Format
+
+```javascript
+return {
+  rows: [
+    { id: 1, name: 'Alice', score: 95 },
+    { id: 2, name: 'Bob', score: 87 }
+  ],
+  columnTypes: [
+    { name: 'id', evidenceType: 'number', typeFidelity: 'precise' },
+    { name: 'name', evidenceType: 'string', typeFidelity: 'precise' },
+    { name: 'score', evidenceType: 'number', typeFidelity: 'precise' }
+  ]
+};
+```
+
+#### Generator Format (for large datasets)
+
+```javascript
+return {
+  rows: async function* () {
+    try {
+      // Yield first batch
+      yield await fetchBatch(0, batchSize);
+      
+      // Stream remaining batches
+      let offset = batchSize;
+      while (true) {
+        const batch = await fetchBatch(offset, batchSize);
+        if (batch.length === 0) break;
+        yield batch;
+        offset += batchSize;
+      }
+    } finally {
+      await cleanup();
+    }
+  },
+  columnTypes: [...],
+  expectedRowCount: 10000
+};
+```
+
+## Complete Example: PostgreSQL Plugin
+
+Here's a simplified version of the official PostgreSQL plugin:
+
+```javascript index.cjs
+const pg = require('pg');
+const { Pool } = pg;
+const { 
+  EvidenceType, 
+  TypeFidelity, 
+  cleanQuery 
+} = require('@evidence-dev/db-commons');
+const Cursor = require('pg-cursor');
+
+/**
+ * Map PostgreSQL types to Evidence types
+ */
+const mapPgType = (typeId) => {
+  switch (typeId) {
+    case pg.types.builtins.BOOL:
+      return EvidenceType.BOOLEAN;
+    case pg.types.builtins.INT2:
+    case pg.types.builtins.INT4:
+    case pg.types.builtins.INT8:
+    case pg.types.builtins.FLOAT4:
+    case pg.types.builtins.FLOAT8:
+    case pg.types.builtins.NUMERIC:
+      return EvidenceType.NUMBER;
+    case pg.types.builtins.DATE:
+    case pg.types.builtins.TIMESTAMP:
+    case pg.types.builtins.TIMESTAMPTZ:
+      return EvidenceType.DATE;
+    default:
+      return EvidenceType.STRING;
+  }
+};
+
+/**
+ * Execute a PostgreSQL query
+ */
+const runQuery = async (queryString, database, batchSize = 100000) => {
+  const credentials = {
+    user: database.user,
+    host: database.host,
+    database: database.database,
+    password: database.password,
+    port: database.port,
+    ssl: database.ssl
+  };
+
+  const pool = new Pool(credentials);
+  const connection = await pool.connect();
+  
+  try {
+    // Get row count
+    const cleanedQuery = cleanQuery(queryString);
+    const countResult = await connection.query(
+      `WITH root as (${cleanedQuery}) SELECT COUNT(*) as rows FROM root`
+    );
+    const rowCount = countResult.rows[0].rows;
+    
+    // Create cursor for streaming
+    const cursor = connection.query(new Cursor(queryString));
+    const firstBatch = await cursor.read(batchSize);
+    
+    return {
+      rows: async function* () {
+        try {
+          // Lowercase all keys
+          yield firstBatch.map(row => 
+            Object.fromEntries(
+              Object.entries(row).map(([k, v]) => [k.toLowerCase(), v])
+            )
+          );
+          
+          // Stream remaining batches
+          let results;
+          while ((results = await cursor.read(batchSize)) && results.length > 0) {
+            yield results.map(row =>
+              Object.fromEntries(
+                Object.entries(row).map(([k, v]) => [k.toLowerCase(), v])
+              )
+            );
+          }
+        } finally {
+          await connection.release();
+          await pool.end();
+        }
+      },
+      columnTypes: cursor._result.fields.map(field => ({
+        name: field.name.toLowerCase(),
+        evidenceType: mapPgType(field.dataTypeID),
+        typeFidelity: TypeFidelity.PRECISE
+      })),
+      expectedRowCount: rowCount
+    };
+  } catch (err) {
+    await connection.release();
+    await pool.end();
+    throw new Error(err.message.replace(/\n|\r/g, ' '));
+  }
+};
+
+module.exports = runQuery;
+
+/**
+ * Get query runner
+ */
+module.exports.getRunner = async (opts) => {
+  return async (queryContent, queryPath, batchSize) => {
+    if (!queryPath.endsWith('.sql')) return null;
+    return runQuery(queryContent, opts, batchSize);
+  };
+};
+
+/**
+ * Test connection
+ */
+module.exports.testConnection = async (opts) => {
+  return await runQuery('SELECT 1;', opts, 1)
+    .then(() => true)
+    .catch((e) => ({ reason: e.message ?? 'Connection failed' }));
+};
+
+/**
+ * Connection options
+ */
+module.exports.options = {
+  host: {
+    title: 'Host',
+    type: 'string',
+    secret: false,
+    default: 'localhost',
+    required: true
+  },
+  port: {
+    title: 'Port',
+    type: 'number',
+    secret: false,
+    default: 5432,
+    required: true
+  },
+  database: {
+    title: 'Database',
+    type: 'string',
+    secret: false,
+    required: true
+  },
+  user: {
+    title: 'Username',
+    type: 'string',
+    secret: true,
+    required: true
+  },
+  password: {
+    title: 'Password',
+    type: 'string',
+    secret: true,
+    required: true
+  },
+  ssl: {
+    title: 'Enable SSL',
+    type: 'boolean',
+    secret: false,
+    nest: true,
+    children: {
+      [true]: {
+        rejectUnauthorized: {
+          title: 'Reject Unauthorized',
+          type: 'boolean',
+          default: true,
+          description: 'Reject certificates from untrusted authorities'
+        }
+      }
+    }
+  }
+};
+```
+
+## Development Workflow
+
+<Steps>
+  <Step title="Initialize Package">
+    ```bash
+    mkdir evidence-datasource
+    cd evidence-datasource
+    npm init -y
+    ```
+  </Step>
+  
+  <Step title="Install Dependencies">
+    ```bash
+    npm install @evidence-dev/db-commons
+    npm install your-database-driver
+    ```
+  </Step>
+  
+  <Step title="Implement Plugin">
+    Create `index.cjs` with required exports:
+    - Default export: `runQuery`
+    - Named exports: `getRunner`, `testConnection`, `options`
+  </Step>
+  
+  <Step title="Configure package.json">
+    Add `evidence` field with datasource configuration
+  </Step>
+  
+  <Step title="Local Testing">
+    Link your plugin for testing:
+    ```bash
+    # In plugin directory
+    npm link
+    
+    # In Evidence project
+    npm link @your-org/evidence-datasource
+    ```
+  </Step>
+  
+  <Step title="Test Connection">
+    Add the datasource to your Evidence project and test:
+    ```bash
+    npm run sources
+    ```
+  </Step>
+</Steps>
+
+## Testing
+
+Create a test file to verify your plugin:
+
+```javascript test/test.js
+import { test } from 'uvu';
+import * as assert from 'uvu/assert';
+import datasource from '../index.cjs';
+
+const testOpts = {
+  host: 'localhost',
+  port: 5432,
+  database: 'testdb',
+  user: 'postgres',
+  password: 'password'
+};
+
+test('testConnection succeeds', async () => {
+  const result = await datasource.testConnection(testOpts);
+  assert.is(result, true);
+});
+
+test('runQuery returns data', async () => {
+  const result = await datasource('SELECT 1 as num', testOpts);
+  assert.ok(result.rows);
+  assert.ok(result.columnTypes);
+  assert.is(result.columnTypes[0].name, 'num');
+});
+
+test.run();
+```
+
+## Best Practices
+
+### Error Handling
+
+```javascript
+try {
+  const result = await client.query(sql);
+  return result;
+} catch (err) {
+  // Sanitize error messages
+  throw new Error(
+    err.message
+      .replace(/\n|\r/g, ' ')  // Remove newlines
+      .replace(/password=[^&]+/g, 'password=***') // Redact passwords
+  );
+}
+```
+
+### Type Parsing
+
+```javascript
+// Override default type parsers if needed
+const types = require('pg').types;
+
+// Parse bigint as number
+types.setTypeParser(20, val => parseInt(val, 10));
+
+// Parse numeric as float
+types.setTypeParser(1700, val => parseFloat(val));
+```
+
+### Memory Management
+
+```javascript
+// Always clean up connections
+finally {
+  if (cursor) await cursor.close();
+  if (connection) await connection.release();
+  if (pool) await pool.end();
+}
+```
+
+### Streaming Large Results
+
+```javascript
+rows: async function* () {
+  try {
+    let offset = 0;
+    while (true) {
+      const batch = await cursor.read(batchSize);
+      if (batch.length === 0) break;
+      yield batch;
+      offset += batchSize;
+    }
+  } finally {
+    await cleanup();
+  }
+}
+```
+
+## Publishing
+
+<Steps>
+  <Step title="Update Package Metadata">
+    Ensure `package.json` has:
+    - Correct version
+    - Complete description
+    - Keywords including `evidence-datasource`
+    - License
+  </Step>
+  
+  <Step title="Create README">
+    Document:
+    - Installation instructions
+    - Connection options
+    - Example usage
+    - Troubleshooting
+  </Step>
+  
+  <Step title="Publish to npm">
+    ```bash
+    npm publish --access public
+    ```
+  </Step>
+</Steps>
+
+## Resources
+
+- [Evidence DB Commons Package](https://github.com/evidence-dev/evidence/tree/main/packages/lib/db-commons)
+- [Official Datasource Plugins](https://github.com/evidence-dev/evidence/tree/main/packages/datasources)
+- [PostgreSQL Plugin Source](https://github.com/evidence-dev/evidence/tree/main/packages/datasources/postgres)
+- [CSV Plugin Source](https://github.com/evidence-dev/evidence/tree/main/packages/datasources/csv)

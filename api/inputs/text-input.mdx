@@ -1,0 +1,289 @@
+---
+title: TextInput
+description: A text input field for user-entered strings with SQL safety features
+---
+
+The `TextInput` component allows users to enter free-form text that can be used in queries and filters.
+
+## Basic Usage
+
+```svelte
+<TextInput 
+  name="searchTerm" 
+  title="Search" 
+  placeholder="Enter search term..."
+/>
+```
+
+## Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for the input. Used to reference the text value using `{inputs.name}`
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Label displayed above the input field
+</ParamField>
+
+<ParamField path="placeholder" type="string" default="Type to search">
+  Placeholder text shown when the input is empty
+</ParamField>
+
+<ParamField path="defaultValue" type="string">
+  Initial value of the text input
+  
+  ```svelte
+  <TextInput name="query" title="Search" defaultValue="electronics" />
+  ```
+</ParamField>
+
+<ParamField path="description" type="string">
+  Help text displayed as an info icon next to the title
+</ParamField>
+
+<ParamField path="unsafe" type="boolean" default="false">
+  When false (default), the input value is automatically SQL-escaped by replacing single quotes with double single quotes. Set to true only if you need raw input (not recommended for security reasons).
+  
+  ```svelte
+  <!-- Safe by default: "O'Brien" becomes "O''Brien" -->
+  <TextInput name="lastName" title="Last Name" />
+  
+  <!-- Unsafe mode (use with caution) -->
+  <TextInput name="rawInput" title="Raw Input" unsafe />
+  ```
+</ParamField>
+
+<ParamField path="hideDuringPrint" type="boolean" default="true">
+  Whether to hide the input field when printing
+</ParamField>
+
+## Using Text Input Values
+
+### Basic String Matching
+
+```sql
+SELECT * 
+FROM products
+WHERE product_name LIKE '%{inputs.searchTerm}%'
+```
+
+### With SQL Parameter
+
+```sql
+SELECT * 
+FROM customers
+WHERE last_name = {inputs.searchTerm.sql}
+```
+
+### Fuzzy Search with Damerau-Levenshtein
+
+```sql
+SELECT 
+  product_name,
+  {inputs.searchTerm.search('product_name')} as similarity
+FROM products
+WHERE similarity < 3
+ORDER BY similarity
+```
+
+## Input Store Structure
+
+The text input value provides multiple access patterns:
+
+```javascript
+{
+  toString(): string,           // Returns the SQL-escaped string
+  sql: "'value'",              // SQL-quoted and escaped string
+  search: (col) => string      // Returns damerau_levenshtein function
+}
+```
+
+### Usage Examples
+
+```javascript
+// Direct usage (toString is called automatically)
+inputs.searchTerm // "electronics"
+
+// SQL-safe quoted string
+inputs.searchTerm.sql // "'electronics'"
+
+// Fuzzy search function
+inputs.searchTerm.search('product_name') // "damerau_levenshtein(product_name, 'electronics')"
+```
+
+## Examples
+
+### Product Search
+
+```svelte
+<TextInput 
+  name="productSearch"
+  title="Search Products"
+  placeholder="Enter product name..."
+/>
+
+```sql matching_products
+SELECT 
+  product_id,
+  product_name,
+  price,
+  category
+FROM products
+WHERE LOWER(product_name) LIKE LOWER('%{inputs.productSearch}%')
+ORDER BY product_name
+LIMIT 50
+```
+
+<DataTable data={matching_products} />
+```
+
+### Fuzzy Name Search
+
+```svelte
+<TextInput 
+  name="customerName"
+  title="Customer Name"
+  description="Find similar names even with typos"
+/>
+
+```sql similar_customers
+SELECT 
+  customer_id,
+  full_name,
+  {inputs.customerName.search('full_name')} as distance
+FROM customers
+WHERE distance <= 3
+ORDER BY distance, full_name
+LIMIT 20
+```
+```
+
+### Multi-Field Filter
+
+```svelte
+<TextInput name="nameFilter" title="Name" />
+<TextInput name="emailFilter" title="Email" />
+<TextInput name="cityFilter" title="City" />
+
+```sql filtered_users
+SELECT * FROM users
+WHERE 
+  (LENGTH('{inputs.nameFilter}') = 0 OR name LIKE '%{inputs.nameFilter}%')
+  AND (LENGTH('{inputs.emailFilter}') = 0 OR email LIKE '%{inputs.emailFilter}%')
+  AND (LENGTH('{inputs.cityFilter}') = 0 OR city LIKE '%{inputs.cityFilter}%')
+```
+```
+
+### Search with Default Value
+
+```svelte
+<TextInput 
+  name="category"
+  title="Category Filter"
+  defaultValue="Electronics"
+/>
+
+```sql filtered_products
+SELECT 
+  product_name,
+  price,
+  stock
+FROM products
+WHERE category = {inputs.category.sql}
+```
+```
+
+### Case-Insensitive Search
+
+```svelte
+<TextInput 
+  name="search"
+  title="Search"
+  placeholder="Type to search..."
+/>
+
+```sql search_results
+SELECT * FROM items
+WHERE LOWER(title) LIKE LOWER('%{inputs.search}%')
+   OR LOWER(description) LIKE LOWER('%{inputs.search}%')
+```
+```
+
+### Conditional Query Execution
+
+```markdown
+<TextInput name="keyword" title="Keyword" />
+```
+
+Then use conditional rendering:
+
+```markdown
+<!-- Only show results if keyword is entered -->
+{#if inputs.keyword}
+  <DataTable data={search_results} />
+{/if}
+```
+
+### Combining with Other Inputs
+
+```svelte
+<TextInput name="productName" title="Product Name" />
+<Dropdown name="category" data={categories} value="category_id" label="category_name" />
+<DateRange name="dateRange" title="Date Range" />
+
+```sql filtered_sales
+SELECT 
+  order_date,
+  product_name,
+  category,
+  amount
+FROM sales
+WHERE 
+  product_name LIKE '%{inputs.productName}%'
+  AND category_id = {inputs.category}
+  AND order_date BETWEEN '{inputs.dateRange.start}' AND '{inputs.dateRange.end}'
+```
+```
+
+## SQL Injection Protection
+
+By default, TextInput automatically escapes single quotes to prevent SQL injection:
+
+```svelte
+<TextInput name="userInput" title="User Input" />
+
+<!-- If user enters: O'Brien -->
+<!-- The value becomes: O''Brien (safe for SQL) -->
+
+```sql safe_query
+SELECT * FROM users WHERE last_name = {inputs.userInput.sql}
+-- Generates: SELECT * FROM users WHERE last_name = 'O''Brien'
+```
+```
+
+## Search Methods
+
+### Exact Match
+```sql
+WHERE column = {inputs.text.sql}
+```
+
+### Partial Match (LIKE)
+```sql
+WHERE column LIKE '%{inputs.text}%'
+```
+
+### Starts With
+```sql
+WHERE column LIKE '{inputs.text}%'
+```
+
+### Ends With
+```sql
+WHERE column LIKE '%{inputs.text}'
+```
+
+### Fuzzy Match (Damerau-Levenshtein Distance)
+```sql
+WHERE {inputs.text.search('column')} <= 3
+```

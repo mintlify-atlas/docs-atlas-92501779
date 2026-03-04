@@ -1,0 +1,436 @@
+---
+title: LineChart
+description: Display data as a line chart with support for multiple series, dual y-axes, and extensive customization options
+---
+
+# LineChart
+
+The `LineChart` component visualizes data as connected line segments, ideal for showing trends over time or continuous data. It supports multiple series, dual y-axes, markers, labels, and various line styles.
+
+## Props
+
+### Data Props
+
+<ParamField path="data" type="Query | array" required>
+  Query result or array of objects containing the data to visualize
+</ParamField>
+
+<ParamField path="x" type="string" required>
+  Column name for the x-axis values
+</ParamField>
+
+<ParamField path="y" type="string" required>
+  Column name for the y-axis values
+</ParamField>
+
+<ParamField path="series" type="string">
+  Column name to group data into multiple series/lines
+</ParamField>
+
+<ParamField path="y2" type="string">
+  Column name for secondary y-axis values
+</ParamField>
+
+### Formatting Props
+
+<ParamField path="xFmt" type="string">
+  Format string for x-axis values (e.g., 'pct', 'usd', '#,##0')
+</ParamField>
+
+<ParamField path="yFmt" type="string">
+  Format string for y-axis values
+</ParamField>
+
+<ParamField path="y2Fmt" type="string">
+  Format string for secondary y-axis values
+</ParamField>
+
+### Chart Layout Props
+
+<ParamField path="title" type="string">
+  Chart title displayed at the top
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  Chart subtitle displayed below the title
+</ParamField>
+
+<ParamField path="legend" type="boolean">
+  Whether to show the legend (default: true for series charts)
+</ParamField>
+
+<ParamField path="chartAreaHeight" type="number">
+  Height of the chart area in pixels
+</ParamField>
+
+### Axis Props
+
+<ParamField path="xAxisTitle" type="string | boolean">
+  Title for x-axis. Use `true` to use column name, string for custom title
+</ParamField>
+
+<ParamField path="yAxisTitle" type="string | boolean">
+  Title for y-axis. Use `true` to use column name, string for custom title
+</ParamField>
+
+<ParamField path="y2AxisTitle" type="string | boolean">
+  Title for secondary y-axis
+</ParamField>
+
+<ParamField path="xGridlines" type="boolean">
+  Show vertical gridlines
+</ParamField>
+
+<ParamField path="yGridlines" type="boolean">
+  Show horizontal gridlines
+</ParamField>
+
+<ParamField path="y2Gridlines" type="boolean">
+  Show gridlines for secondary y-axis
+</ParamField>
+
+<ParamField path="xAxisLabels" type="boolean">
+  Show labels on x-axis
+</ParamField>
+
+<ParamField path="yAxisLabels" type="boolean">
+  Show labels on y-axis
+</ParamField>
+
+<ParamField path="y2AxisLabels" type="boolean">
+  Show labels on secondary y-axis
+</ParamField>
+
+<ParamField path="xBaseline" type="boolean">
+  Show x-axis baseline
+</ParamField>
+
+<ParamField path="yBaseline" type="boolean">
+  Show y-axis baseline
+</ParamField>
+
+<ParamField path="y2Baseline" type="boolean">
+  Show secondary y-axis baseline
+</ParamField>
+
+<ParamField path="xTickMarks" type="boolean">
+  Show tick marks on x-axis
+</ParamField>
+
+<ParamField path="yTickMarks" type="boolean">
+  Show tick marks on y-axis
+</ParamField>
+
+<ParamField path="y2TickMarks" type="boolean">
+  Show tick marks on secondary y-axis
+</ParamField>
+
+### Axis Scale Props
+
+<ParamField path="xType" type="string">
+  Type of x-axis: 'category' | 'time' | 'value'
+</ParamField>
+
+<ParamField path="yLog" type="boolean">
+  Use logarithmic scale for y-axis
+</ParamField>
+
+<ParamField path="yLogBase" type="number">
+  Base for logarithmic y-axis (default: 10)
+</ParamField>
+
+<ParamField path="yMin" type="number">
+  Minimum value for y-axis
+</ParamField>
+
+<ParamField path="yMax" type="number">
+  Maximum value for y-axis
+</ParamField>
+
+<ParamField path="yScale" type="boolean">
+  Auto-scale y-axis to data range
+</ParamField>
+
+<ParamField path="y2Min" type="number">
+  Minimum value for secondary y-axis
+</ParamField>
+
+<ParamField path="y2Max" type="number">
+  Maximum value for secondary y-axis
+</ParamField>
+
+<ParamField path="y2Scale" type="boolean">
+  Auto-scale secondary y-axis to data range
+</ParamField>
+
+### Line Style Props
+
+<ParamField path="lineColor" type="string">
+  Color for the line (hex, rgb, or theme color name)
+</ParamField>
+
+<ParamField path="lineType" type="string">
+  Line style: 'solid' | 'dashed' | 'dotted'
+</ParamField>
+
+<ParamField path="lineOpacity" type="number">
+  Opacity of the line (0-1)
+</ParamField>
+
+<ParamField path="lineWidth" type="number">
+  Width of the line in pixels
+</ParamField>
+
+<ParamField path="step" type="boolean">
+  Use step line instead of smooth line
+</ParamField>
+
+<ParamField path="stepPosition" type="string">
+  Position of step: 'start' | 'middle' | 'end'
+</ParamField>
+
+### Marker Props
+
+<ParamField path="markers" type="boolean">
+  Show markers at data points
+</ParamField>
+
+<ParamField path="markerShape" type="string">
+  Shape of markers: 'circle' | 'square' | 'triangle' | 'diamond'
+</ParamField>
+
+<ParamField path="markerSize" type="number">
+  Size of markers in pixels
+</ParamField>
+
+### Label Props
+
+<ParamField path="labels" type="boolean">
+  Show data labels on the line
+</ParamField>
+
+<ParamField path="labelSize" type="number">
+  Font size for labels
+</ParamField>
+
+<ParamField path="labelPosition" type="string">
+  Position of labels: 'top' | 'bottom' | 'left' | 'right'
+</ParamField>
+
+<ParamField path="labelColor" type="string">
+  Color for labels
+</ParamField>
+
+<ParamField path="labelFmt" type="string">
+  Format string for labels
+</ParamField>
+
+<ParamField path="yLabelFmt" type="string">
+  Format string for y-axis labels
+</ParamField>
+
+<ParamField path="y2LabelFmt" type="string">
+  Format string for secondary y-axis labels
+</ParamField>
+
+<ParamField path="showAllLabels" type="boolean">
+  Show labels for all data points (default shows subset to avoid overlap)
+</ParamField>
+
+### Series Props
+
+<ParamField path="colorPalette" type="string | array">
+  Color palette name or array of colors for series
+</ParamField>
+
+<ParamField path="seriesColors" type="object">
+  Object mapping series names to specific colors: `{seriesName: 'color'}`
+</ParamField>
+
+<ParamField path="seriesOrder" type="array">
+  Array specifying the order of series: `['series1', 'series2']`
+</ParamField>
+
+<ParamField path="y2SeriesType" type="string">
+  Chart type for y2 series: 'line' | 'bar'
+</ParamField>
+
+<ParamField path="seriesLabelFmt" type="string">
+  Format string for series labels
+</ParamField>
+
+### Behavior Props
+
+<ParamField path="handleMissing" type="string">
+  How to handle missing data: 'gap' | 'connect' | 'zero'
+</ParamField>
+
+<ParamField path="sort" type="boolean">
+  Sort data by x-axis before rendering
+</ParamField>
+
+<ParamField path="connectGroup" type="string">
+  Connect multiple charts for synchronized tooltips/zooming
+</ParamField>
+
+### Advanced Props
+
+<ParamField path="echartsOptions" type="object">
+  Custom ECharts configuration object to override defaults
+</ParamField>
+
+<ParamField path="seriesOptions" type="object">
+  Custom options for series configuration
+</ParamField>
+
+<ParamField path="printEchartsConfig" type="boolean">
+  Print ECharts config to console for debugging
+</ParamField>
+
+<ParamField path="renderer" type="string">
+  Renderer type: 'canvas' | 'svg'
+</ParamField>
+
+<ParamField path="downloadableData" type="boolean">
+  Enable data download option
+</ParamField>
+
+<ParamField path="downloadableImage" type="boolean">
+  Enable image download option
+</ParamField>
+
+<ParamField path="emptySet" type="string">
+  Behavior when data is empty: 'pass' | 'warn' | 'error'
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom message to display when data is empty
+</ParamField>
+
+<ParamField path="yAxisColor" type="string">
+  Color for y-axis
+</ParamField>
+
+<ParamField path="y2AxisColor" type="string">
+  Color for secondary y-axis
+</ParamField>
+
+<ParamField path="leftPadding" type="number">
+  Left padding for chart area
+</ParamField>
+
+<ParamField path="rightPadding" type="number">
+  Right padding for chart area
+</ParamField>
+
+<ParamField path="xLabelWrap" type="boolean">
+  Wrap x-axis labels if they're too long
+</ParamField>
+
+## Examples
+
+### Basic Line Chart
+
+```markdown
+```sql orders_by_month
+select date_trunc('month', order_date) as month, sum(sales) as total_sales
+from orders
+group by 1
+order by 1
+```
+
+<LineChart data={orders_by_month} x="month" y="total_sales" />
+```
+
+### Multiple Series
+
+```markdown
+```sql sales_by_category
+select 
+  date_trunc('month', order_date) as month,
+  category,
+  sum(sales) as total_sales
+from orders
+group by 1, 2
+order by 1, 2
+```
+
+<LineChart 
+  data={sales_by_category} 
+  x="month" 
+  y="total_sales" 
+  series="category"
+  title="Sales by Category"
+  legend="true"
+/>
+```
+
+### Customized Line with Markers
+
+```markdown
+<LineChart 
+  data={sales_by_category} 
+  x="month" 
+  y="total_sales" 
+  series="category"
+  lineWidth=3
+  markers="true"
+  markerSize=8
+  yFmt="usd"
+  xAxisTitle="Month"
+  yAxisTitle="Revenue"
+/>
+```
+
+### Dual Y-Axis
+
+```markdown
+```sql metrics
+select 
+  month,
+  revenue,
+  order_count
+from monthly_metrics
+```
+
+<LineChart 
+  data={metrics} 
+  x="month" 
+  y="revenue" 
+  y2="order_count"
+  yFmt="usd"
+  y2Fmt="#,##0"
+  yAxisTitle="Revenue"
+  y2AxisTitle="Orders"
+/>
+```
+
+### Step Line Chart
+
+```markdown
+<LineChart 
+  data={inventory_levels} 
+  x="date" 
+  y="quantity"
+  step="true"
+  stepPosition="end"
+  title="Inventory Levels"
+/>
+```
+
+### Custom Colors
+
+```markdown
+<LineChart 
+  data={sales_by_category} 
+  x="month" 
+  y="total_sales" 
+  series="category"
+  seriesColors={{
+    'Electronics': 'primary',
+    'Clothing': 'secondary',
+    'Food': 'accent'
+  }}
+  seriesOrder={['Electronics', 'Clothing', 'Food']}
+/>
+```

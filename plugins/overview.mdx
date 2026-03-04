@@ -1,0 +1,330 @@
+---
+title: Plugin System Overview
+description: Understanding Evidence's plugin architecture and extension points
+---
+
+# Plugin System Overview
+
+Evidence's plugin system allows you to extend the framework with custom data sources, components, and layouts. Plugins are distributed as npm packages with special configuration in their `package.json` file.
+
+## Plugin Types
+
+Evidence supports three types of plugins:
+
+<CardGroup cols={3}>
+  <Card title="Datasource Plugins" icon="database" href="/plugins/datasource-plugins">
+    Connect to databases and data sources
+  </Card>
+  <Card title="Component Plugins" icon="puzzle-piece" href="/plugins/component-plugins">
+    Add custom Svelte components
+  </Card>
+  <Card title="Layout Plugins" icon="layer-group">
+    Provide custom project templates
+  </Card>
+</CardGroup>
+
+## Plugin Package Structure
+
+### Package Configuration
+
+All Evidence plugins are identified by an `evidence` field in `package.json`:
+
+```json package.json
+{
+  "name": "@your-org/evidence-plugin",
+  "version": "1.0.0",
+  "main": "index.cjs",
+  "type": "module",
+  "evidence": {
+    // Plugin-specific configuration
+  },
+  "keywords": [
+    "evidence",
+    "evidence-datasource",
+    "evidence-component"
+  ]
+}
+```
+
+### Plugin Discovery
+
+Evidence discovers plugins through:
+
+1. **NPM Keywords** - Packages tagged with `evidence-datasource` or `evidence-component`
+2. **Evidence Config** - Plugins explicitly configured in `evidence.config.yaml`
+3. **Dependencies** - Any dependency with an `evidence` field in `package.json`
+
+## Plugin Configuration Schema
+
+The plugin system uses Zod schemas for validation:
+
+### Base Plugin Package
+
+```typescript
+const BasePluginPackageSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  evidence: z.object({})
+});
+```
+
+### Datasource Plugin Schema
+
+```typescript
+const DatasourcePluginSchema = BasePluginPackageSchema.extend({
+  evidence: z.object({
+    datasources: z.array(
+      z.union([
+        z.string(), // Single name
+        z.array(z.string()) // Array of aliases
+      ])
+    ),
+    icon: z.enum([...iconKeys]).optional()
+  }),
+  main: z.string() // Entry point file
+});
+```
+
+### Component Plugin Schema
+
+```typescript
+const ComponentPluginSchema = BasePluginPackageSchema.extend({
+  evidence: z.object({
+    components: z.boolean().or(
+      z.string() // Path to component exports
+    )
+  }),
+  main: z.string()
+});
+```
+
+## Plugin Lifecycle
+
+### Loading Sequence
+
+<Steps>
+  <Step title="Package Discovery">
+    Evidence scans `node_modules` for packages with the `evidence` field
+  </Step>
+  
+  <Step title="Schema Validation">
+    Package metadata is validated against plugin schemas
+  </Step>
+  
+  <Step title="Plugin Registration">
+    Valid plugins are registered in their respective registries:
+    - Datasources → `Datasources` class
+    - Components → `PluginComponents` map
+  </Step>
+  
+  <Step title="Runtime Loading">
+    Plugins are loaded on-demand during:
+    - Data source queries
+    - Component rendering
+    - Build processes
+  </Step>
+</Steps>
+
+### Datasource Plugin Lifecycle
+
+```javascript
+// 1. Plugin is discovered and validated
+const [pack, source] = datasources.getBySource('postgres');
+
+// 2. Connection options are validated
+const validatedOpts = validateOptions(source.options, userConfig);
+
+// 3. Connection is tested
+const result = await source.testConnection(validatedOpts);
+
+// 4. Query runner is created
+const runner = await source.getRunner(validatedOpts);
+
+// 5. Queries are executed
+const data = await runner(queryContent, queryPath, batchSize);
+```
+
+### Component Plugin Lifecycle
+
+```javascript
+// 1. Component plugins are loaded
+const plugins = await loadComponentPlugins();
+
+// 2. Components are extracted from each plugin
+for (const plugin of plugins) {
+  const components = await getComponentsInPlugin(plugin);
+  
+  // 3. Components are registered
+  for (const [name, component] of Object.entries(components)) {
+    registry[name] = {
+      package: plugin.name,
+      component: component
+    };
+  }
+}
+
+// 4. Overrides are validated
+validateOverrides(components);
+```
+
+## Plugin Overrides
+
+Plugins can override components from other plugins:
+
+```yaml evidence.config.yaml
+plugins:
+  components:
+    '@evidence-dev/core-components':
+      overrides: []
+      provides: []
+      aliases: {}
+    '@your-org/custom-components':
+      overrides: ['LineChart'] # Override core LineChart
+      provides: []
+      aliases: {}
+```
+
+<Warning>
+Overrides are validated at load time. You cannot override the same component from multiple plugins.
+</Warning>
+
+## Plugin Icons
+
+Datasource plugins can specify icons from supported icon libraries:
+
+```json
+{
+  "evidence": {
+    "datasources": ["postgres"],
+    "icon": "Postgresql" // From simple-icons or tabler-icons
+  }
+}
+```
+
+Supported icon sources:
+- `@steeze-ui/simple-icons`
+- `@steeze-ui/tabler-icons`
+- `@evidence-dev/icons`
+
+## Development Workflow
+
+<Steps>
+  <Step title="Create Package">
+    Initialize a new npm package with appropriate structure
+  </Step>
+  
+  <Step title="Implement Interface">
+    Implement the required plugin interface (datasource or component)
+  </Step>
+  
+  <Step title="Configure package.json">
+    Add the `evidence` field with plugin metadata
+  </Step>
+  
+  <Step title="Local Testing">
+    Use npm link or workspace protocol for local development
+  </Step>
+  
+  <Step title="Publish">
+    Publish to npm with appropriate keywords
+  </Step>
+</Steps>
+
+## Best Practices
+
+### Versioning
+
+- Follow semantic versioning
+- Document breaking changes clearly
+- Test against multiple Evidence versions
+
+### Dependencies
+
+- Keep dependencies minimal
+- Use peer dependencies for Evidence core packages
+- Avoid conflicting versions
+
+### Error Handling
+
+```javascript
+// Provide clear error messages
+if (!connection) {
+  throw new Error(
+    'Database connection failed: Check your credentials and network settings'
+  );
+}
+```
+
+### Type Safety
+
+```javascript
+/**
+ * @typedef {Object} ConnectionOptions
+ * @property {string} host
+ * @property {number} port
+ */
+
+/** @type {import('@evidence-dev/db-commons').ConnectionTester<ConnectionOptions>} */
+module.exports.testConnection = async (opts) => {
+  // Implementation
+};
+```
+
+## Plugin Registry
+
+### Datasources Registry
+
+The `Datasources` class manages datasource plugins:
+
+```javascript
+class Datasources {
+  #byPackage = {}; // Package name → plugin
+  #bySource = {};  // Source type → plugin
+  #overrides = {}; // Source overrides
+  
+  add(pack, source, overrides) {
+    // Register plugin
+  }
+  
+  getByPackageName(packageName) {
+    return this.#byPackage[packageName];
+  }
+  
+  getBySource(sourceName) {
+    return this.#bySource[sourceName];
+  }
+}
+```
+
+### Component Registry
+
+Component plugins are stored as:
+
+```typescript
+interface PluginComponent {
+  package: string;        // Originating package
+  aliasOf?: string;       // If this is an alias
+  overriden?: PluginComponent; // Overridden component
+}
+
+interface PluginComponents {
+  [componentName: string]: PluginComponent;
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create a Datasource Plugin" icon="database" href="/plugins/datasource-plugins">
+    Learn how to build custom data source connectors
+  </Card>
+  <Card title="Create a Component Plugin" icon="puzzle-piece" href="/plugins/component-plugins">
+    Build reusable Svelte components for Evidence
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [Evidence SDK on GitHub](https://github.com/evidence-dev/evidence)
+- [Example Plugins](https://github.com/evidence-dev/evidence/tree/main/packages/datasources)
+- [Plugin API Reference](/api-reference/plugins)

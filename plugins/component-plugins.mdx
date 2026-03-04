@@ -1,0 +1,746 @@
+---
+title: Creating Component Plugins
+description: Build reusable Svelte components for Evidence projects
+---
+
+# Creating Component Plugins
+
+Component plugins allow you to create reusable Svelte components that can be used across Evidence projects. This guide covers creating, packaging, and publishing component plugins.
+
+## Plugin Structure
+
+A component plugin is an npm package that exports Svelte components with specific Evidence metadata.
+
+### Package Structure
+
+```
+@your-org/evidence-components/
+├── package.json
+├── svelte.config.js
+├── vite.config.js
+├── src/
+│   └── lib/
+│       ├── index.js           # Main export file
+│       ├── Button/
+│       │   ├── Button.svelte
+│       │   └── index.js
+│       ├── Chart/
+│       │   ├── Chart.svelte
+│       │   └── index.js
+│       └── Table/
+│           ├── Table.svelte
+│           └── index.js
+└── dist/                      # Built output
+    └── index.js
+```
+
+### Package Configuration
+
+```json package.json
+{
+  "name": "@your-org/evidence-components",
+  "version": "1.0.0",
+  "description": "Custom components for Evidence",
+  "type": "module",
+  "svelte": "./dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "evidence": {
+    "components": true
+  },
+  "keywords": [
+    "evidence",
+    "evidence-component",
+    "svelte"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/*.spec.*"
+  ],
+  "peerDependencies": {
+    "svelte": "^4.2.0"
+  },
+  "devDependencies": {
+    "@sveltejs/kit": "^2.0.0",
+    "@sveltejs/package": "^2.0.0",
+    "svelte": "^4.2.0",
+    "vite": "^5.0.0"
+  }
+}
+```
+
+<Info>
+The `evidence.components` field can be:
+- `true` - Components are exported from the main entry point
+- `string` - Path to a custom file exporting components
+</Info>
+
+## Component Plugin Interface
+
+### Component Metadata
+
+```typescript
+interface PluginComponent {
+  package: string;           // Name of originating package
+  aliasOf?: string;          // Name of exported component from package
+  overriden?: PluginComponent; // If this component is overridden
+}
+
+interface PluginComponents {
+  [componentName: string]: PluginComponent;
+}
+```
+
+### Component Manifest Schema
+
+```javascript
+import { z } from 'zod';
+
+export const ComponentManifestSchema = z.object({
+  components: z.array(z.string())
+});
+```
+
+## Creating Components
+
+### Basic Component
+
+```svelte src/lib/Button/Button.svelte
+<script>
+  export let variant = 'primary';
+  export let size = 'medium';
+  export let disabled = false;
+</script>
+
+<button 
+  class="btn btn-{variant} btn-{size}" 
+  {disabled}
+  on:click
+>
+  <slot />
+</button>
+
+<style>
+  .btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  
+  .btn-primary {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    background: #2563eb;
+  }
+  
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+</style>
+```
+
+### Data-Connected Component
+
+```svelte src/lib/DataTable/DataTable.svelte
+<script>
+  import { getContext } from 'svelte';
+  
+  export let data;
+  export let columns = undefined;
+  export let rowsPerPage = 10;
+  
+  // Access Evidence context if needed
+  const evidenceContext = getContext('evidence');
+  
+  // Process data
+  $: rows = Array.isArray(data) ? data : [];
+  $: displayColumns = columns || (rows[0] ? Object.keys(rows[0]) : []);
+  
+  let currentPage = 0;
+  $: totalPages = Math.ceil(rows.length / rowsPerPage);
+  $: pagedRows = rows.slice(
+    currentPage * rowsPerPage,
+    (currentPage + 1) * rowsPerPage
+  );
+</script>
+
+<div class="data-table">
+  <table>
+    <thead>
+      <tr>
+        {#each displayColumns as col}
+          <th>{col}</th>
+        {/each}
+      </tr>
+    </thead>
+    <tbody>
+      {#each pagedRows as row}
+        <tr>
+          {#each displayColumns as col}
+            <td>{row[col] ?? ''}</td>
+          {/each}
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+  
+  <div class="pagination">
+    <button 
+      disabled={currentPage === 0}
+      on:click={() => currentPage--}
+    >
+      Previous
+    </button>
+    <span>Page {currentPage + 1} of {totalPages}</span>
+    <button 
+      disabled={currentPage >= totalPages - 1}
+      on:click={() => currentPage++}
+    >
+      Next
+    </button>
+  </div>
+</div>
+
+<style>
+  .data-table {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  th {
+    font-weight: 600;
+    background: #f9fafb;
+  }
+  
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+</style>
+```
+
+### Chart Component
+
+```svelte src/lib/Chart/LineChart.svelte
+<script>
+  import { onMount } from 'svelte';
+  import * as echarts from 'echarts';
+  
+  export let data;
+  export let x;
+  export let y;
+  export let title = '';
+  
+  let chartContainer;
+  let chart;
+  
+  $: processedData = processData(data, x, y);
+  
+  function processData(data, xCol, yCol) {
+    if (!data || !xCol || !yCol) return { xData: [], yData: [] };
+    
+    return {
+      xData: data.map(row => row[xCol]),
+      yData: data.map(row => row[yCol])
+    };
+  }
+  
+  onMount(() => {
+    chart = echarts.init(chartContainer);
+    
+    const option = {
+      title: { text: title },
+      tooltip: { trigger: 'axis' },
+      xAxis: {
+        type: 'category',
+        data: processedData.xData
+      },
+      yAxis: {
+        type: 'value'
+      },
+      series: [{
+        type: 'line',
+        data: processedData.yData,
+        smooth: true
+      }]
+    };
+    
+    chart.setOption(option);
+    
+    // Handle resize
+    const resizeObserver = new ResizeObserver(() => {
+      chart.resize();
+    });
+    resizeObserver.observe(chartContainer);
+    
+    return () => {
+      resizeObserver.disconnect();
+      chart.dispose();
+    };
+  });
+  
+  // Update chart when data changes
+  $: if (chart && processedData) {
+    chart.setOption({
+      xAxis: { data: processedData.xData },
+      series: [{ data: processedData.yData }]
+    });
+  }
+</script>
+
+<div bind:this={chartContainer} class="chart" />
+
+<style>
+  .chart {
+    width: 100%;
+    height: 400px;
+  }
+</style>
+```
+
+## Exporting Components
+
+### Component Index Files
+
+Each component should have an index file:
+
+```javascript src/lib/Button/index.js
+export { default as Button } from './Button.svelte';
+```
+
+```javascript src/lib/DataTable/index.js
+export { default as DataTable } from './DataTable.svelte';
+```
+
+### Main Index File
+
+Export all components from the main index:
+
+```javascript src/lib/index.js
+// Export all components
+export * from './Button/index.js';
+export * from './DataTable/index.js';
+export * from './Chart/index.js';
+
+// Or export specific components
+export { Button } from './Button/index.js';
+export { DataTable } from './DataTable/index.js';
+export { LineChart } from './Chart/index.js';
+```
+
+## Build Configuration
+
+### SvelteKit Package Config
+
+```javascript svelte.config.js
+import adapter from '@sveltejs/adapter-auto';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
+const config = {
+  preprocess: vitePreprocess(),
+  
+  kit: {
+    adapter: adapter(),
+    package: {
+      // Customize package output
+      exports: (filepath) => {
+        // Include all .svelte files and index.js
+        return filepath.endsWith('.svelte') || filepath.endsWith('index.js');
+      }
+    }
+  }
+};
+
+export default config;
+```
+
+### Vite Configuration
+
+```javascript vite.config.js
+import { defineConfig } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+
+export default defineConfig({
+  plugins: [svelte()],
+  build: {
+    lib: {
+      entry: 'src/lib/index.js',
+      name: 'EvidenceComponents'
+    },
+    rollupOptions: {
+      external: ['svelte', 'svelte/internal'],
+      output: {
+        globals: {
+          svelte: 'svelte'
+        }
+      }
+    }
+  }
+});
+```
+
+## Component Plugin Loading
+
+Evidence loads component plugins through this process:
+
+```javascript
+// 1. Load component plugins
+const loadComponentPlugins = async () => {
+  const { plugins } = getEvidenceConfig();
+  const allComponentPlugins = plugins.components ?? {};
+  
+  const components = [];
+  
+  await Promise.all(
+    Object.entries(allComponentPlugins).map(async ([name, spec]) => {
+      const pack = await loadPluginPackage(name);
+      if (!pack || !isComponentPlugin(pack)) return;
+      
+      components.push({ 
+        name, 
+        package: pack, 
+        options: spec 
+      });
+    })
+  );
+  
+  validateOverrides(components);
+  return components;
+};
+
+// 2. Extract components from plugin
+const getComponentsInPlugin = async (plugin) => {
+  const { package: pkg } = plugin;
+  
+  // Load from main entry point
+  const module = await import(pkg.name);
+  
+  // Extract exported components
+  const components = {};
+  for (const [name, component] of Object.entries(module)) {
+    if (isValidSvelteComponent(component)) {
+      components[name] = {
+        package: pkg.name,
+        component: component
+      };
+    }
+  }
+  
+  return components;
+};
+```
+
+## Component Overrides
+
+Plugins can override components from other plugins:
+
+```yaml evidence.config.yaml
+plugins:
+  components:
+    '@evidence-dev/core-components':
+      overrides: []
+    '@your-org/custom-components':
+      overrides: ['LineChart', 'BarChart']
+      aliases:
+        CustomTable: 'DataTable'
+```
+
+### Override Validation
+
+```javascript
+function validateOverrides(components) {
+  const overrideMap = new Map();
+  
+  for (const plugin of components) {
+    for (const override of plugin.options.overrides || []) {
+      if (overrideMap.has(override)) {
+        throw new Error(
+          `Component "${override}" is overridden by multiple plugins: ` +
+          `${overrideMap.get(override)} and ${plugin.name}`
+        );
+      }
+      overrideMap.set(override, plugin.name);
+    }
+  }
+}
+```
+
+## Real Example: Core Components
+
+The official `@evidence-dev/core-components` package structure:
+
+```json package.json
+{
+  "name": "@evidence-dev/core-components",
+  "version": "5.4.2",
+  "svelte": "./dist/index.js",
+  "main": "./dist/index.js",
+  "type": "module",
+  "evidence": {
+    "components": true
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@evidence-dev/component-utilities": "workspace:*",
+    "echarts": "5.6.0",
+    "chroma-js": "^2.4.2"
+  },
+  "peerDependencies": {
+    "svelte": "^4.2.19"
+  }
+}
+```
+
+```javascript src/lib/index.js
+// Re-export component categories
+export * from './atoms/index.js';
+export * from './molecules/index.js';
+export * from './organisms/index.js';
+```
+
+```javascript src/lib/atoms/index.js
+// Export individual components
+export { Accordion, AccordionItem } from './accordion/index.js';
+export { Alert } from './alert/index.js';
+export { Button } from './button/index.js';
+```
+
+## Development Workflow
+
+<Steps>
+  <Step title="Initialize SvelteKit Package">
+    ```bash
+    npm create svelte@latest evidence-components
+    cd evidence-components
+    npm install
+    ```
+    
+    Choose "Library project" when prompted.
+  </Step>
+  
+  <Step title="Install Dependencies">
+    ```bash
+    npm install -D @sveltejs/package
+    npm install @evidence-dev/component-utilities # Optional
+    ```
+  </Step>
+  
+  <Step title="Create Components">
+    Build your Svelte components in `src/lib/`
+  </Step>
+  
+  <Step title="Configure Exports">
+    Update `src/lib/index.js` to export all components
+  </Step>
+  
+  <Step title="Update package.json">
+    Add the `evidence.components` field and configure exports
+  </Step>
+  
+  <Step title="Build Package">
+    ```bash
+    npm run package
+    ```
+    
+    This creates the `dist/` directory with built components.
+  </Step>
+  
+  <Step title="Local Testing">
+    Link to an Evidence project:
+    ```bash
+    # In component package
+    npm link
+    
+    # In Evidence project
+    npm link @your-org/evidence-components
+    ```
+    
+    Add to `evidence.config.yaml`:
+    ```yaml
+    plugins:
+      components:
+        '@your-org/evidence-components':
+          overrides: []
+    ```
+  </Step>
+</Steps>
+
+## Best Practices
+
+### Component Props
+
+```svelte
+<script>
+  // Required props
+  export let data; // No default = required
+  
+  // Optional props with defaults
+  export let title = '';
+  export let color = 'blue';
+  
+  // Validate props
+  $: if (!data) {
+    console.error('DataTable requires data prop');
+  }
+</script>
+```
+
+### Type Safety
+
+Use JSDoc for type hints:
+
+```svelte
+<script>
+  /**
+   * @typedef {Object} ChartData
+   * @property {string} x
+   * @property {number} y
+   */
+  
+  /** @type {ChartData[]} */
+  export let data;
+  
+  /** @type {string} */
+  export let title = '';
+</script>
+```
+
+### Styling
+
+```svelte
+<style>
+  /* Use scoped styles */
+  .component {
+    /* Component-specific styles */
+  }
+  
+  /* Support theming with CSS variables */
+  .component {
+    background: var(--component-bg, #ffffff);
+    color: var(--component-text, #000000);
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .component {
+      flex-direction: column;
+    }
+  }
+</style>
+```
+
+### Accessibility
+
+```svelte
+<button 
+  aria-label="Close dialog"
+  role="button"
+  tabindex="0"
+  on:click
+  on:keydown={(e) => e.key === 'Enter' && click()}
+>
+  <slot />
+</button>
+```
+
+## Testing
+
+Create component tests:
+
+```javascript src/lib/Button/Button.test.js
+import { render, fireEvent } from '@testing-library/svelte';
+import { test } from 'vitest';
+import Button from './Button.svelte';
+
+test('renders button with text', () => {
+  const { getByText } = render(Button, {
+    props: { variant: 'primary' },
+    slots: { default: 'Click me' }
+  });
+  
+  expect(getByText('Click me')).toBeTruthy();
+});
+
+test('calls onClick when clicked', async () => {
+  let clicked = false;
+  const { getByRole } = render(Button, {
+    props: { variant: 'primary' }
+  });
+  
+  const button = getByRole('button');
+  button.addEventListener('click', () => { clicked = true; });
+  
+  await fireEvent.click(button);
+  expect(clicked).toBe(true);
+});
+```
+
+## Publishing
+
+<Steps>
+  <Step title="Build Package">
+    ```bash
+    npm run package
+    ```
+  </Step>
+  
+  <Step title="Test Build">
+    ```bash
+    npm run package && cd dist && npm pack
+    ```
+  </Step>
+  
+  <Step title="Update Version">
+    ```bash
+    npm version patch # or minor, major
+    ```
+  </Step>
+  
+  <Step title="Publish">
+    ```bash
+    npm publish --access public
+    ```
+  </Step>
+</Steps>
+
+## Resources
+
+- [SvelteKit Packaging Docs](https://kit.svelte.dev/docs/packaging)
+- [Evidence Core Components](https://github.com/evidence-dev/evidence/tree/main/packages/ui/core-components)
+- [Evidence Component Utilities](https://github.com/evidence-dev/evidence/tree/main/packages/component-utilities)
+- [Svelte Component API](https://svelte.dev/docs/svelte-components)

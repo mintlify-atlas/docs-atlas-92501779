@@ -1,0 +1,281 @@
+---
+title: DateRange
+description: A date range picker for selecting start and end dates
+---
+
+The `DateRange` component allows users to select a date range with a calendar interface and optional preset ranges.
+
+## Basic Usage
+
+```svelte
+<DateRange 
+  name="reportPeriod" 
+  title="Report Period"
+/>
+```
+
+## Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for the input. Used to reference the date range using `{inputs.name.start}` and `{inputs.name.end}`
+</ParamField>
+
+<ParamField path="title" type="string">
+  Label displayed above the date picker
+</ParamField>
+
+<ParamField path="start" type="string | Date">
+  Initial start date. Accepts Date object or date string (YYYY-MM-DD)
+  
+  ```svelte
+  <DateRange name="period" start="2024-01-01" />
+  ```
+</ParamField>
+
+<ParamField path="end" type="string | Date">
+  Initial end date. Accepts Date object or date string (YYYY-MM-DD)
+  
+  ```svelte
+  <DateRange name="period" end="2024-12-31" />
+  ```
+</ParamField>
+
+<ParamField path="data" type="Query">
+  Query containing date values to determine min/max range. Requires `dates` prop.
+</ParamField>
+
+<ParamField path="dates" type="string">
+  Column name in the query containing dates. Used with `data` to auto-calculate start/end range.
+  
+  ```svelte
+  <DateRange 
+    name="salesPeriod"
+    data={salesData}
+    dates="order_date"
+  />
+  ```
+</ParamField>
+
+<ParamField path="presetRanges" type="string | string[]">
+  Preset date ranges to display as quick options. Accepts single value or array.
+  
+  Available presets:
+  - `last7Days` or `Last 7 Days`
+  - `last30Days` or `Last 30 Days`
+  - `last90Days` or `Last 90 Days`
+  - `last365Days` or `Last 365 Days`
+  - `lastWeek` or `Last Week`
+  - `lastMonth` or `Last Month`
+  - `last3Months` or `Last 3 Months`
+  - `lastYear` or `Last Year`
+  - `allTime` or `All Time`
+  
+  ```svelte
+  <DateRange 
+    name="period" 
+    presetRanges={['last7Days', 'last30Days', 'last90Days']}
+  />
+  ```
+</ParamField>
+
+<ParamField path="defaultValue" type="string">
+  Preset range to select by default
+  
+  ```svelte
+  <DateRange name="period" defaultValue="last30Days" />
+  ```
+</ParamField>
+
+<ParamField path="description" type="string">
+  Help text displayed as an info icon next to the title
+</ParamField>
+
+<ParamField path="hideDuringPrint" type="boolean" default="true">
+  Whether to hide the date picker when printing
+</ParamField>
+
+## Using Date Range Values
+
+The selected date range is accessible via the input store:
+
+```sql
+SELECT * 
+FROM orders
+WHERE order_date >= '{inputs.reportPeriod.start}'
+  AND order_date < '{inputs.reportPeriod.end}'
+```
+
+## Input Store Structure
+
+```javascript
+{
+  start: "2024-01-01",  // Start date in YYYY-MM-DD format
+  end: "2024-03-31"     // End date in YYYY-MM-DD format
+}
+```
+
+## Examples
+
+### Basic Date Range
+
+```svelte
+<DateRange 
+  name="analysisWindow"
+  title="Analysis Period"
+  start="2024-01-01"
+  end="2024-12-31"
+/>
+
+```sql sales_in_range
+SELECT 
+  date,
+  SUM(amount) as total_sales
+FROM sales
+WHERE date BETWEEN '{inputs.analysisWindow.start}' AND '{inputs.analysisWindow.end}'
+GROUP BY date
+ORDER BY date
+```
+```
+
+### With Preset Ranges
+
+```svelte
+<DateRange 
+  name="reportPeriod"
+  title="Report Period"
+  presetRanges={[
+    'last7Days',
+    'last30Days',
+    'last90Days',
+    'lastYear',
+    'allTime'
+  ]}
+  defaultValue="last30Days"
+/>
+```
+
+### Dynamic Range from Data
+
+```svelte
+<script>
+  const orderData = Query.create(`
+    SELECT 
+      order_date,
+      amount
+    FROM orders
+  `);
+</script>
+
+<DateRange 
+  name="orderRange"
+  title="Order Date Range"
+  data={orderData}
+  dates="order_date"
+/>
+
+<!-- The date picker will automatically set min/max based on the data -->
+```
+
+### Filtering Multiple Queries
+
+```svelte
+<DateRange 
+  name="dateFilter"
+  title="Date Range"
+  presetRanges="last30Days"
+/>
+
+```sql orders_filtered
+SELECT * FROM orders
+WHERE order_date >= '{inputs.dateFilter.start}'
+  AND order_date <= '{inputs.dateFilter.end}'
+```
+
+```sql revenue_filtered
+SELECT 
+  date,
+  SUM(amount) as revenue
+FROM transactions
+WHERE date >= '{inputs.dateFilter.start}'
+  AND date <= '{inputs.dateFilter.end}'
+GROUP BY date
+```
+```
+
+### Custom Preset Ranges
+
+```svelte
+<DateRange 
+  name="customPeriod"
+  title="Custom Period"
+  presetRanges={[
+    'Last 7 Days',
+    'Last Month',
+    'Last 3 Months',
+    'Last Year'
+  ]}
+/>
+```
+
+Preset names are case-insensitive and can include spaces.
+
+### Year-to-Date Analysis
+
+```svelte
+<DateRange 
+  name="ytd"
+  title="Period"
+  start="2024-01-01"
+  end={new Date().toISOString().split('T')[0]}
+/>
+
+```sql ytd_sales
+SELECT 
+  MONTH(order_date) as month,
+  SUM(amount) as monthly_sales
+FROM orders
+WHERE order_date BETWEEN '{inputs.ytd.start}' AND '{inputs.ytd.end}'
+GROUP BY MONTH(order_date)
+```
+```
+
+### Comparison Periods
+
+```svelte
+<DateRange name="current" title="Current Period" />
+<DateRange name="previous" title="Comparison Period" />
+
+```sql comparison
+SELECT 
+  'Current' as period,
+  SUM(amount) as total
+FROM sales
+WHERE date BETWEEN '{inputs.current.start}' AND '{inputs.current.end}'
+
+UNION ALL
+
+SELECT 
+  'Previous' as period,
+  SUM(amount) as total
+FROM sales
+WHERE date BETWEEN '{inputs.previous.start}' AND '{inputs.previous.end}'
+```
+
+<BarChart 
+  data={comparison}
+  x="period"
+  y="total"
+/>
+```
+
+## Date Format
+
+Dates are stored and returned in `YYYY-MM-DD` format (e.g., "2024-03-15"), which is compatible with SQL date comparisons.
+
+## Calendar Interface
+
+The component provides a visual calendar picker where users can:
+- Click to select start and end dates
+- Navigate between months
+- Use preset ranges for common selections
+- Type dates directly (if the underlying implementation supports it)

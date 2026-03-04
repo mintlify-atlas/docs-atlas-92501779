@@ -1,0 +1,536 @@
+---
+title: Input Components
+description: Add interactivity to your Evidence reports with dropdowns, date pickers, text inputs, and buttons
+---
+
+Input components allow users to interact with your Evidence reports by filtering data, selecting options, and triggering actions.
+
+## Available Input Components
+
+<CardGroup cols={3}>
+  <Card title="Dropdown" icon="caret-down">
+    Single and multi-select dropdowns
+  </Card>
+  <Card title="DateRange" icon="calendar">
+    Date and date range pickers
+  </Card>
+  <Card title="TextInput" icon="input-text">
+    Free-form text input
+  </Card>
+  <Card title="ButtonGroup" icon="square-check">
+    Toggle buttons and radio groups
+  </Card>
+  <Card title="Checkbox" icon="check-square">
+    Boolean checkboxes
+  </Card>
+  <Card title="Slider" icon="sliders">
+    Range and value sliders
+  </Card>
+</CardGroup>
+
+## Accessing Input Values
+
+All input values are available through the `inputs` object:
+
+```markdown
+<Dropdown name="category" data={categories} value="category"/>
+
+Selected: {inputs.category.value}
+Label: {inputs.category.label}
+```
+
+Use inputs in SQL queries:
+
+```sql filtered_orders
+SELECT * FROM orders
+WHERE category = '${inputs.category.value}'
+```
+
+## Dropdown
+
+Dropdowns allow users to select from a list of options.
+
+### Dropdown from Query
+
+```markdown
+```sql categories
+SELECT category FROM orders
+GROUP BY category
+ORDER BY category
+```
+
+<Dropdown 
+  data={categories} 
+  name="category" 
+  value="category"
+/>
+```
+
+### With Custom Title
+
+```markdown
+<Dropdown 
+  data={years} 
+  name="year" 
+  value="year" 
+  title="Order Year"
+/>
+```
+
+### Hardcoded Options
+
+```markdown
+<Dropdown name=hardcoded_option>
+  <DropdownOption value=1 valueLabel="Option 1"/>
+  <DropdownOption value=2 valueLabel="Option 2"/>
+  <DropdownOption value=3 valueLabel="Option 3"/>
+</Dropdown>
+```
+
+### Default Value
+
+```markdown
+<Dropdown 
+  name="category" 
+  data={categories} 
+  value="category" 
+  defaultValue="Electronics"
+/>
+```
+
+### Multi-Select
+
+Allow multiple selections:
+
+```markdown
+<Dropdown 
+  name="multi_select" 
+  data={categories} 
+  value="category" 
+  multiple
+/>
+```
+
+Use in SQL with `IN` clause:
+
+```sql filtered_data
+SELECT * FROM orders
+WHERE category IN ${inputs.multi_select.value}
+```
+
+### Select All by Default
+
+```markdown
+<Dropdown 
+  name="categories" 
+  data={categories} 
+  value="category" 
+  multiple 
+  selectAllByDefault
+/>
+```
+
+### Dropdown Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for accessing the input value
+</ParamField>
+
+<ParamField path="data" type="QueryResult">
+  Query result containing options (use with `value` prop)
+</ParamField>
+
+<ParamField path="value" type="string">
+  Column name to use for option values
+</ParamField>
+
+<ParamField path="title" type="string">
+  Label displayed above the dropdown
+</ParamField>
+
+<ParamField path="defaultValue" type="string | string[]">
+  Initial selected value(s)
+</ParamField>
+
+<ParamField path="multiple" type="boolean" default="false">
+  Allow multiple selections
+</ParamField>
+
+<ParamField path="selectAllByDefault" type="boolean" default="false">
+  Select all options initially (multi-select only)
+</ParamField>
+
+<ParamField path="order" type="string">
+  Column to order options by
+</ParamField>
+
+## DateRange
+
+Date pickers for filtering data by date ranges.
+
+### Single Date Picker
+
+```markdown
+<DateRange 
+  name="start_date" 
+  title="Start Date"
+/>
+```
+
+### Date Range Picker
+
+```markdown
+<DateRange 
+  name="date_range"
+  title="Select Date Range"
+/>
+```
+
+Access start and end dates:
+
+```sql orders_in_range
+SELECT * FROM orders
+WHERE order_date >= '${inputs.date_range.start}'
+  AND order_date <= '${inputs.date_range.end}'
+```
+
+### With Default Dates
+
+```markdown
+<DateRange 
+  name="date_range"
+  start="2024-01-01"
+  end="2024-12-31"
+/>
+```
+
+### DateRange Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for accessing the input value
+</ParamField>
+
+<ParamField path="title" type="string">
+  Label displayed above the date picker
+</ParamField>
+
+<ParamField path="start" type="string">
+  Default start date (YYYY-MM-DD)
+</ParamField>
+
+<ParamField path="end" type="string">
+  Default end date (YYYY-MM-DD)
+</ParamField>
+
+## TextInput
+
+Free-form text input for searching and filtering.
+
+### Basic TextInput
+
+```markdown
+<TextInput 
+  name="search" 
+  title="Search Products"
+  placeholder="Enter product name..."
+/>
+```
+
+### Use in Query
+
+```sql search_results
+SELECT * FROM products
+WHERE product_name ILIKE '%${inputs.search.value}%'
+```
+
+### With Default Value
+
+```markdown
+<TextInput 
+  name="search" 
+  title="Search" 
+  defaultValue="Widget"
+/>
+```
+
+### TextInput Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for accessing the input value
+</ParamField>
+
+<ParamField path="title" type="string">
+  Label displayed above the input
+</ParamField>
+
+<ParamField path="placeholder" type="string">
+  Placeholder text
+</ParamField>
+
+<ParamField path="defaultValue" type="string">
+  Initial value
+</ParamField>
+
+## ButtonGroup
+
+Toggle buttons for selecting between options.
+
+### Basic ButtonGroup
+
+```markdown
+<ButtonGroup name=view_mode>
+  <ButtonGroupItem value="chart" label="Chart View"/>
+  <ButtonGroupItem value="table" label="Table View"/>
+  <ButtonGroupItem value="both" label="Both"/>
+</ButtonGroup>
+```
+
+### Conditional Display
+
+```markdown
+{#if inputs.view_mode.value === 'chart' || inputs.view_mode.value === 'both'}
+  <BarChart data={data} x="category" y="sales"/>
+{/if}
+
+{#if inputs.view_mode.value === 'table' || inputs.view_mode.value === 'both'}
+  <DataTable data={data}/>
+{/if}
+```
+
+### ButtonGroup Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for accessing the input value
+</ParamField>
+
+<ParamField path="title" type="string">
+  Label displayed above the button group
+</ParamField>
+
+<ParamField path="defaultValue" type="string">
+  Initial selected value
+</ParamField>
+
+## Checkbox
+
+Boolean checkboxes for on/off options.
+
+```markdown
+<Checkbox 
+  name="include_inactive" 
+  label="Include Inactive Customers"
+/>
+```
+
+### Use in Query
+
+```sql customers
+SELECT * FROM customers
+WHERE {#if !inputs.include_inactive.value}
+  status = 'active'
+{/if}
+```
+
+### Checkbox Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for accessing the input value
+</ParamField>
+
+<ParamField path="label" type="string">
+  Label displayed next to checkbox
+</ParamField>
+
+<ParamField path="defaultValue" type="boolean" default="false">
+  Initial checked state
+</ParamField>
+
+## Slider
+
+Range sliders for numeric inputs.
+
+### Basic Slider
+
+```markdown
+<Slider 
+  name="price_max" 
+  title="Max Price" 
+  min=0 
+  max=1000 
+  defaultValue=500
+/>
+```
+
+### Use in Query
+
+```sql filtered_products
+SELECT * FROM products
+WHERE price <= ${inputs.price_max.value}
+```
+
+### Range Slider
+
+```markdown
+<Slider 
+  name="price_range" 
+  title="Price Range" 
+  min=0 
+  max=1000 
+  defaultValue={[100, 800]}
+  range
+/>
+```
+
+### Slider Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for accessing the input value
+</ParamField>
+
+<ParamField path="title" type="string">
+  Label displayed above the slider
+</ParamField>
+
+<ParamField path="min" type="number" default="0">
+  Minimum value
+</ParamField>
+
+<ParamField path="max" type="number" default="100">
+  Maximum value
+</ParamField>
+
+<ParamField path="step" type="number" default="1">
+  Step increment
+</ParamField>
+
+<ParamField path="defaultValue" type="number | number[]">
+  Initial value or range
+</ParamField>
+
+<ParamField path="range" type="boolean" default="false">
+  Enable range mode (two handles)
+</ParamField>
+
+## Complete Example
+
+Here's a complete example using multiple inputs:
+
+```markdown
+# Sales Dashboard
+
+```sql categories
+SELECT DISTINCT category FROM orders ORDER BY category
+```
+
+```sql regions
+SELECT DISTINCT region FROM orders ORDER BY region
+```
+
+## Filters
+
+<Grid cols="3">
+  <Dropdown 
+    name="category" 
+    data={categories} 
+    value="category" 
+    title="Category" 
+    multiple 
+    selectAllByDefault
+  />
+  
+  <Dropdown 
+    name="region" 
+    data={regions} 
+    value="region" 
+    title="Region"
+    multiple 
+    selectAllByDefault
+  />
+  
+  <DateRange 
+    name="date_range" 
+    title="Date Range"
+    start="2024-01-01"
+    end="2024-12-31"
+  />
+</Grid>
+
+```sql filtered_orders
+SELECT 
+  DATE_TRUNC('month', order_date) as month,
+  SUM(sales) as total_sales,
+  COUNT(*) as num_orders
+FROM orders
+WHERE category IN ${inputs.category.value}
+  AND region IN ${inputs.region.value}
+  AND order_date >= '${inputs.date_range.start}'
+  AND order_date <= '${inputs.date_range.end}'
+GROUP BY 1
+ORDER BY 1
+```
+
+## Results
+
+<Grid cols="3">
+  <BigValue 
+    data={filtered_orders} 
+    value="total_sales" 
+    title="Total Sales"
+    fmt="usd"
+  />
+  <BigValue 
+    data={filtered_orders} 
+    value="num_orders" 
+    title="Orders"
+  />
+</Grid>
+
+<LineChart 
+  data={filtered_orders}
+  x="month"
+  y="total_sales"
+  title="Sales Trend"
+/>
+```
+
+## Best Practices
+
+1. **Use descriptive names** - Make input names clear and meaningful
+2. **Provide defaults** - Set sensible default values
+3. **Add titles** - Label inputs clearly
+4. **Multi-select for categories** - Use multi-select for category filters
+5. **Date ranges for time** - Use DateRange for time-based filtering
+6. **Show selected values** - Display current filter selections
+7. **Handle empty results** - Consider what happens with no matching data
+
+## Input State Management
+
+Input values persist in the URL, allowing users to:
+- Share filtered views via URL
+- Bookmark specific filter combinations
+- Navigate back/forward through filter states
+
+## Conditional Logic
+
+Use Svelte's conditional syntax with inputs:
+
+```markdown
+{#if inputs.view_type.value === 'summary'}
+  <BigValue data={data} value="total"/>
+{:else if inputs.view_type.value === 'detail'}
+  <DataTable data={data}/>
+{:else}
+  <BarChart data={data} x="category" y="sales"/>
+{/if}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Charts" icon="chart-bar" href="/components/charts">
+    Visualize filtered data
+  </Card>
+  <Card title="Custom Components" icon="code" href="/components/custom-components">
+    Build custom input components
+  </Card>
+</CardGroup>

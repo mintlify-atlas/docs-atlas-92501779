@@ -1,0 +1,187 @@
+---
+title: Deploy to Netlify
+description: Deploy your Evidence app to Netlify with continuous deployment from Git
+---
+
+Netlify provides a simple platform for deploying Evidence apps with automatic builds from your Git repository.
+
+## Prerequisites
+
+- An Evidence project in a Git repository (GitHub, GitLab, or Bitbucket)
+- A [Netlify account](https://app.netlify.com/signup)
+- Your data sources configured and tested locally
+
+## Deployment Steps
+
+<Steps>
+
+### Push Your Project to Git
+
+Ensure your Evidence project is committed to a Git repository:
+
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin <your-repository-url>
+git push -u origin main
+```
+
+### Connect to Netlify
+
+1. Log in to [Netlify](https://app.netlify.com)
+2. Click **Add new site** > **Import an existing project**
+3. Choose your Git provider (GitHub, GitLab, or Bitbucket)
+4. Authorize Netlify to access your repositories
+5. Select your Evidence repository
+
+### Configure Build Settings
+
+Netlify should auto-detect your build settings. Verify or configure:
+
+| Setting | Value |
+|---------|-------|
+| **Base directory** | (leave empty) |
+| **Build command** | `npm run sources && npm run build` |
+| **Publish directory** | `build` |
+| **Functions directory** | (leave empty) |
+
+<CodeGroup>
+```toml netlify.toml
+[build]
+  command = "npm run sources && npm run build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NODE_OPTIONS = "--max-old-space-size=4096"
+```
+</CodeGroup>
+
+### Add Environment Variables
+
+If your data sources require credentials:
+
+1. In Netlify, go to **Site settings** > **Environment variables**
+2. Add your environment variables with the `EVIDENCE_` prefix
+3. For database connections, add variables like:
+   - `EVIDENCE_SOURCE__[datasource]__host`
+   - `EVIDENCE_SOURCE__[datasource]__database`
+   - `EVIDENCE_SOURCE__[datasource]__user`
+   - `EVIDENCE_SOURCE__[datasource]__password`
+
+<Warning>
+Never commit credentials to your Git repository. Always use environment variables for sensitive data.
+</Warning>
+
+### Deploy
+
+Click **Deploy site**. Netlify will:
+
+1. Clone your repository
+2. Install dependencies
+3. Run `npm run sources` to query your data
+4. Run `npm run build` to build the static site
+5. Deploy the contents of the `build` directory
+
+</Steps>
+
+## Configuration Options
+
+### Custom Domain
+
+To use a custom domain:
+
+1. Go to **Site settings** > **Domain management**
+2. Click **Add custom domain**
+3. Follow the instructions to configure DNS
+
+### Build Hooks
+
+Set up build hooks to trigger deployments:
+
+1. Go to **Site settings** > **Build & deploy** > **Build hooks**
+2. Click **Add build hook**
+3. Name your hook (e.g., "Scheduled rebuild")
+4. Use the webhook URL to trigger builds via API or scheduled jobs
+
+### Redirects and Rewrites
+
+Create a `netlify.toml` file in your project root:
+
+<CodeGroup>
+```toml netlify.toml
+[build]
+  command = "npm run sources && npm run build"
+  publish = "build"
+
+[[redirects]]
+  from = "/old-page"
+  to = "/new-page"
+  status = 301
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+```
+</CodeGroup>
+
+## Continuous Deployment
+
+Netlify automatically rebuilds your site when you push to your repository:
+
+```bash
+git add .
+git commit -m "Update dashboard"
+git push
+```
+
+Monitor the build progress in the Netlify dashboard under **Deploys**.
+
+## Troubleshooting
+
+### Build Fails with Memory Error
+
+Increase the Node.js memory limit in `netlify.toml`:
+
+```toml
+[build.environment]
+  NODE_OPTIONS = "--max-old-space-size=8192"
+```
+
+### Build Command Not Found
+
+Ensure your `package.json` includes the build scripts:
+
+```json
+{
+  "scripts": {
+    "sources": "evidence sources",
+    "build": "evidence build",
+    "dev": "evidence dev"
+  }
+}
+```
+
+### Data Source Connection Fails
+
+1. Verify environment variables are set correctly in Netlify
+2. Check that your data source is accessible from Netlify's servers
+3. Review build logs for specific error messages
+4. Test locally with the same environment variables
+
+### Build Takes Too Long
+
+Optimize your build:
+
+- Use `--changed` flag to build only modified queries: `npm run sources -- --changed`
+- Reduce the amount of data queried during build time
+- Consider pre-aggregating data in your database
+
+## Next Steps
+
+- Configure [rendering modes](/deployment/configuration/rendering-modes)
+- Set up [scheduled rebuilds](https://docs.netlify.com/configure-builds/build-hooks/) for fresh data
+- Enable [deploy previews](https://docs.netlify.com/site-deploys/deploy-previews/) for pull requests

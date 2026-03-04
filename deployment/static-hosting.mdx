@@ -1,0 +1,427 @@
+---
+title: Static Site Hosting
+description: Deploy Evidence to any static hosting provider
+---
+
+Evidence generates a static site that can be deployed to any platform that serves HTML, CSS, and JavaScript files. This guide covers general static hosting and platform-specific configurations.
+
+## Build Your Site
+
+Before deploying, build your Evidence app:
+
+<CodeGroup>
+```bash npm
+# Generate data from sources
+npm run sources
+
+# Build static site
+npm run build
+```
+
+```bash pnpm
+# Generate data from sources
+pnpm sources
+
+# Build static site
+pnpm build
+```
+</CodeGroup>
+
+This creates a `build` directory containing your static site.
+
+## What's in the Build Directory
+
+The `build` directory contains:
+
+```
+build/
+├── index.html              # Entry point
+├── _app/                   # Application bundles
+│   ├── immutable/         # Hashed assets (CSS, JS)
+│   └── version.json       # Build version
+├── data/                   # Data files
+│   ├── manifest.json      # Data manifest
+│   └── [source]/          # Parquet data files
+└── [your-pages]/          # Static HTML for each page
+```
+
+All files in this directory can be served by any static file server.
+
+## Platform-Specific Guides
+
+### GitHub Pages
+
+<Steps>
+
+#### Create GitHub Actions Workflow
+
+Create `.github/workflows/deploy.yml`:
+
+<CodeGroup>
+```yaml deploy.yml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build sources
+        run: npm run sources
+        env:
+          # Add your environment variables here
+          EVIDENCE_SOURCE__mydb__host: ${{ secrets.DB_HOST }}
+      
+      - name: Build site
+        run: npm run build
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: ./build
+  
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+```
+</CodeGroup>
+
+#### Configure GitHub Pages
+
+1. Go to repository **Settings** > **Pages**
+2. Under **Source**, select **GitHub Actions**
+3. Push to trigger deployment
+
+#### Configure Base Path
+
+If deploying to a subdirectory (e.g., `username.github.io/project`), configure the base path:
+
+<CodeGroup>
+```javascript evidence.config.js
+export default {
+  deployment: {
+    basePath: '/project'
+  }
+}
+```
+</CodeGroup>
+
+</Steps>
+
+### AWS S3 + CloudFront
+
+<Steps>
+
+#### Create S3 Bucket
+
+```bash
+aws s3 mb s3://my-evidence-app
+```
+
+#### Configure Bucket for Static Hosting
+
+```bash
+aws s3 website s3://my-evidence-app --index-document index.html
+```
+
+#### Upload Build Files
+
+```bash
+aws s3 sync ./build s3://my-evidence-app --delete
+```
+
+#### Create CloudFront Distribution (Optional)
+
+For HTTPS and better performance:
+
+1. Create CloudFront distribution pointing to S3 bucket
+2. Configure custom domain and SSL certificate
+3. Set cache behaviors for `_app/immutable/*` with long TTL
+
+</Steps>
+
+### Cloudflare Pages
+
+<Steps>
+
+#### Connect Repository
+
+1. Log in to [Cloudflare Pages](https://pages.cloudflare.com)
+2. Click **Create a project**
+3. Connect your Git repository
+
+#### Configure Build Settings
+
+| Setting | Value |
+|---------|-------|
+| **Framework preset** | None |
+| **Build command** | `npm run sources && npm run build` |
+| **Build output directory** | `build` |
+
+#### Add Environment Variables
+
+Go to **Settings** > **Environment variables** and add your `EVIDENCE_*` variables.
+
+#### Deploy
+
+Push to your repository to trigger a build.
+
+</Steps>
+
+### Firebase Hosting
+
+<Steps>
+
+#### Install Firebase CLI
+
+```bash
+npm install -g firebase-tools
+firebase login
+```
+
+#### Initialize Firebase
+
+```bash
+firebase init hosting
+```
+
+Configure:
+- Public directory: `build`
+- Single-page app: No
+- Set up automatic builds: Optional
+
+#### Deploy
+
+```bash
+npm run build
+firebase deploy --only hosting
+```
+
+</Steps>
+
+### Azure Static Web Apps
+
+<Steps>
+
+#### Create GitHub Action
+
+Azure will generate a workflow file:
+
+<CodeGroup>
+```yaml azure-static-web-apps.yml
+name: Azure Static Web Apps CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Build And Deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/"
+          app_build_command: "npm run sources && npm run build"
+          output_location: "build"
+```
+</CodeGroup>
+
+</Steps>
+
+### Custom Server
+
+Deploy to your own server using any web server:
+
+#### Nginx
+
+<CodeGroup>
+```nginx nginx.conf
+server {
+    listen 80;
+    server_name example.com;
+    root /var/www/evidence/build;
+    index index.html;
+
+    # Cache static assets
+    location /_app/immutable/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Serve data files
+    location /data/ {
+        expires 1h;
+        add_header Cache-Control "public";
+    }
+
+    # Handle SPA routing (if using SPA mode)
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+</CodeGroup>
+
+#### Apache
+
+<CodeGroup>
+```apache .htaccess
+# Enable rewrite engine
+RewriteEngine On
+
+# Cache static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+</IfModule>
+
+# SPA routing (if needed)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+```
+</CodeGroup>
+
+#### Deploy via SCP
+
+```bash
+npm run build
+scp -r build/* user@server:/var/www/evidence/
+```
+
+#### Deploy via Rsync
+
+```bash
+npm run build
+rsync -avz --delete build/ user@server:/var/www/evidence/
+```
+
+## Performance Optimization
+
+### Caching Strategy
+
+Configure caching headers for optimal performance:
+
+- **Immutable assets** (`_app/immutable/*`): Cache for 1 year
+- **Data files** (`data/*`): Cache based on your data refresh frequency
+- **HTML files**: No cache or short cache (for latest content)
+
+### Compression
+
+Enable gzip or Brotli compression on your server:
+
+```nginx
+# Nginx
+gzip on;
+gzip_types text/plain text/css application/json application/javascript;
+gzip_min_length 1000;
+```
+
+### CDN
+
+Use a CDN for global distribution:
+- Cloudflare
+- AWS CloudFront
+- Azure CDN
+- Fastly
+
+## Continuous Deployment
+
+### Using GitHub Actions
+
+Generic deployment workflow:
+
+<CodeGroup>
+```yaml deploy.yml
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      
+      - run: npm ci
+      - run: npm run sources
+        env:
+          EVIDENCE_SOURCE__db__host: ${{ secrets.DB_HOST }}
+      - run: npm run build
+      
+      # Deploy step (customize based on your platform)
+      - name: Deploy
+        run: |
+          # Example: rsync to server
+          echo "${{ secrets.SSH_KEY }}" > deploy_key
+          chmod 600 deploy_key
+          rsync -avz -e "ssh -i deploy_key -o StrictHostKeyChecking=no" \
+            build/ user@server:/var/www/evidence/
+```
+</CodeGroup>
+
+## Troubleshooting
+
+### 404 Errors on Page Refresh
+
+Configure your server to serve `index.html` for all routes, or ensure pre-rendering is enabled.
+
+### Assets Not Loading
+
+Check your base path configuration if deploying to a subdirectory.
+
+### Slow Initial Load
+
+- Enable compression (gzip/Brotli)
+- Use a CDN
+- Optimize data file sizes
+- Check network waterfall in browser DevTools
+
+## Next Steps
+
+- Configure [base paths](/deployment/configuration/base-paths) for subdirectory hosting
+- Set up [rendering modes](/deployment/configuration/rendering-modes)
+- Implement [automated data refreshes](#) with scheduled builds

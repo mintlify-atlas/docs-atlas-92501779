@@ -1,0 +1,233 @@
+---
+title: "PostgreSQL"
+description: "Connect Evidence to PostgreSQL databases"
+---
+
+## Installation
+
+Install the PostgreSQL connector:
+
+```bash
+npm install @evidence-dev/postgres
+```
+
+## Configuration
+
+<CodeGroup>
+```yaml connection.yaml
+name: postgres
+type: postgres
+options:
+  host: localhost
+  port: 5432
+  database: mydb
+  user: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+  ssl: false
+```
+
+```env .env
+POSTGRES_USER=username
+POSTGRES_PASSWORD=your_secure_password
+```
+</CodeGroup>
+
+## Configuration Parameters
+
+<ParamField path="host" type="string" required default="localhost">
+  Database hostname to connect to
+</ParamField>
+
+<ParamField path="port" type="number" required default={5432}>
+  Database port to connect to
+</ParamField>
+
+<ParamField path="database" type="string" required default="postgres">
+  Database name to connect to
+</ParamField>
+
+<ParamField path="user" type="string" required>
+  Username for authentication
+</ParamField>
+
+<ParamField path="password" type="string" required>
+  Password for authentication
+</ParamField>
+
+<ParamField path="schema" type="string">
+  Default schema to use. Sets the `search_path` for the connection
+</ParamField>
+
+<ParamField path="options" type="string">
+  Additional connection options string
+</ParamField>
+
+## SSL Configuration
+
+Enable SSL/TLS encryption for secure connections:
+
+```yaml connection.yaml
+name: postgres
+type: postgres
+options:
+  host: mydb.example.com
+  port: 5432
+  database: mydb
+  user: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+  ssl:
+    sslmode: require
+    rejectUnauthorized: true
+```
+
+### SSL Parameters
+
+<ParamField path="ssl.sslmode" type="string">
+  SSL mode: `allow`, `prefer`, `require`, `verify-ca`, or `verify-full`
+</ParamField>
+
+<ParamField path="ssl.rejectUnauthorized" type="boolean" default={true}>
+  When false, accepts certificates with untrusted authorities. **Only disable if absolutely necessary**
+</ParamField>
+
+<Warning>
+  Setting `rejectUnauthorized: false` disables certificate validation and should only be used in development environments. Production connections should always verify certificates.
+</Warning>
+
+## Connection String
+
+You can also use a PostgreSQL connection string:
+
+```yaml connection.yaml
+name: postgres
+type: postgres
+options:
+  connectionString: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/mydb?sslmode=require
+```
+
+## Features
+
+### Type Mapping
+
+PostgreSQL types are mapped to Evidence types:
+
+- **Numbers**: NUMERIC, MONEY, INT2, INT4, INT8, FLOAT4, FLOAT8
+- **Strings**: VARCHAR, TEXT, CHAR, JSON, XML, NAME
+- **Dates**: DATE, TIME, TIMETZ, TIMESTAMP, TIMESTAMPTZ
+- **Booleans**: BOOL
+
+### Type Parsing Overrides
+
+The connector overrides default PostgreSQL type parsing for better JavaScript compatibility:
+
+- **BIGINT (20)**: Parsed as integer instead of string
+- **NUMERIC (1700)**: Parsed as float instead of string
+- **MONEY (790)**: Parsed as float with currency symbols removed
+- **JSON/JSONB**: Returned as strings to preserve exact formatting
+
+### Column Name Normalization
+
+PostgreSQL column names are automatically converted to lowercase for consistency.
+
+### Schema Support
+
+Set a default schema using the `schema` parameter. This sets the PostgreSQL `search_path` for all queries:
+
+```yaml
+options:
+  schema: analytics
+```
+
+### Cursor-based Streaming
+
+The connector uses PostgreSQL cursors to stream large result sets efficiently in batches (default 100,000 rows).
+
+## Example Query
+
+Create a SQL file in your Evidence project:
+
+```sql queries/user_activity.sql
+SELECT 
+  DATE_TRUNC('day', created_at) as date,
+  COUNT(*) as signups,
+  COUNT(*) FILTER (WHERE activated = true) as activated_users
+FROM users
+WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+GROUP BY 1
+ORDER BY 1 DESC
+```
+
+## Cloud Providers
+
+### Amazon RDS
+
+```yaml connection.yaml
+name: postgres_rds
+type: postgres
+options:
+  host: mydb.abc123.us-east-1.rds.amazonaws.com
+  port: 5432
+  database: postgres
+  user: ${RDS_USER}
+  password: ${RDS_PASSWORD}
+  ssl:
+    sslmode: require
+```
+
+### Google Cloud SQL
+
+```yaml connection.yaml
+name: postgres_cloudsql
+type: postgres
+options:
+  host: /cloudsql/project:region:instance
+  database: mydb
+  user: ${CLOUDSQL_USER}
+  password: ${CLOUDSQL_PASSWORD}
+```
+
+### Azure Database for PostgreSQL
+
+```yaml connection.yaml
+name: postgres_azure
+type: postgres
+options:
+  host: myserver.postgres.database.azure.com
+  port: 5432
+  database: mydb
+  user: username@myserver
+  password: ${AZURE_POSTGRES_PASSWORD}
+  ssl:
+    sslmode: require
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection timeout errors">
+    - Verify the host and port are correct
+    - Check firewall rules allow connections from your Evidence instance
+    - For cloud databases, ensure your IP is whitelisted
+  </Accordion>
+  
+  <Accordion title="SSL/TLS errors">
+    - Use `sslmode: require` for encrypted connections
+    - For self-signed certificates, you may need to set `rejectUnauthorized: false` (not recommended for production)
+    - For cloud providers, download and reference their CA certificate
+  </Accordion>
+  
+  <Accordion title="Schema not found">
+    Ensure the specified schema exists and your user has the USAGE privilege:
+    ```sql
+    GRANT USAGE ON SCHEMA analytics TO username;
+    GRANT SELECT ON ALL TABLES IN SCHEMA analytics TO username;
+    ```
+  </Accordion>
+  
+  <Accordion title="Permission denied errors">
+    Grant SELECT permissions on required tables:
+    ```sql
+    GRANT SELECT ON table_name TO username;
+    ```
+  </Accordion>
+</AccordionGroup>

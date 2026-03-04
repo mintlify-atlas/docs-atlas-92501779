@@ -1,0 +1,125 @@
+---
+title: Grid
+description: Create responsive grid layouts with customizable columns and gaps
+icon: grid
+---
+
+The Grid component creates a responsive grid layout that automatically adapts to different screen sizes. It provides a simple way to organize content into columns with configurable spacing.
+
+## Basic Usage
+
+```html
+<Grid cols=2lt;Grid cols="2">
+  <div>Item 1</div>
+  <div>Item 2</div>
+  <div>Item 3</div>
+  <div>Item 4</div>
+</Grid>
+```
+
+## Props
+
+<ParamField path="cols" type="1 | 2 | 3 | 4 | 5 | 6" default="2">
+  Number of columns in the grid. The grid automatically adjusts for smaller screen sizes:
+  - **1 column**: Always single column
+  - **2 columns**: 1 column on mobile, 2 on tablet and up
+  - **3 columns**: 1 column on mobile, 2 on tablet, 3 on desktop
+  - **4 columns**: 1 column on mobile, 2 on tablet, 3 on medium desktop, 4 on large
+  - **5 columns**: 1 column on mobile, 2 on tablet, 3 on medium desktop, 5 on large
+  - **6 columns**: 1 column on mobile, 2 on tablet, 3 on medium desktop, 6 on large
+</ParamField>
+
+<ParamField path="gapSize" type="'none' | 'sm' | 'md' | 'lg'" default="'md'">
+  Controls the spacing between grid items:
+  - **none**: 0px gap
+  - **sm**: 8px gap
+  - **md**: 16px gap
+  - **lg**: 32px gap
+</ParamField>
+
+## Examples
+
+### Two Column Grid
+
+```html
+<Grid cols=2lt;Grid cols="2" gapSize="md">
+  <div class="p-4 bg-blue-100 rounded">
+    <h3>Column 1</h3>
+    <p>First column content</p>
+  </div>
+  <div class="p-4 bg-green-100 rounded">
+    <h3>Column 2</h3>
+    <p>Second column content</p>
+  </div>
+</Grid>
+```
+
+### Four Column Dashboard
+
+```html
+<Grid cols=4lt;Grid cols="4" gapSize="lg">
+  <div class="metric-card">
+    <h4>Total Revenue</h4>
+    <p class="text-2xl">$1.2M</p>
+  </div>
+  <div class="metric-card">
+    <h4>Orders</h4>
+    <p class="text-2xl">3,542</p>
+  </div>
+  <div class="metric-card">
+    <h4>Customers</h4>
+    <p class="text-2xl">892</p>
+  </div>
+  <div class="metric-card">
+    <h4>Avg Order</h4>
+    <p class="text-2xl">$339</p>
+  </div>
+</Grid>
+```
+
+### Chart Grid
+
+```html
+<Grid cols=3lt;Grid cols="3" gapSize="md">
+  <BarChart data={sales_by_region} />
+  <LineChart data={revenue_trend} />
+  <PieChart data={product_mix} />
+</Grid>
+```
+
+### No Gap Grid
+
+```html
+<Grid cols=2lt;Grid cols="2" gapSize="none">
+  <div class="border p-4">Tile 1</div>
+  <div class="border p-4">Tile 2</div>
+  <div class="border p-4">Tile 3</div>
+  <div class="border p-4">Tile 4</div>
+</Grid>
+```
+
+## Responsive Behavior
+
+The Grid component is designed to be fully responsive. Breakpoints are automatically applied based on the `cols` prop:
+
+- **Mobile** (< 640px): Displays 1 column for all grid configurations
+- **Tablet** (640px - 767px): Displays 2 columns for grids with `cols` >= 2
+- **Desktop** (768px - 1023px): Displays 3 columns for grids with `cols` >= 3
+- **Large Desktop** (>= 1024px): Displays the full number of columns specified in `cols`
+
+This ensures your layouts look great on all devices without additional configuration.
+
+## Use Cases
+
+- **Dashboard metrics**: Display KPIs in a clean, scannable grid
+- **Chart galleries**: Organize multiple visualizations side by side
+- **Feature cards**: Showcase product features or benefits
+- **Image galleries**: Create photo or media grids
+- **Report sections**: Structure different report sections in columns
+
+## Notes
+
+- The Grid component uses CSS Grid under the hood
+- Grid items will stretch to fill available space
+- Gap sizes are defined in pixels and remain consistent across screen sizes
+- The component sets a context that child charts can use to calculate appropriate widths for printing

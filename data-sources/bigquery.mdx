@@ -1,0 +1,181 @@
+---
+title: "BigQuery"
+description: "Connect Evidence to Google BigQuery"
+---
+
+## Installation
+
+Install the BigQuery connector:
+
+```bash
+npm install @evidence-dev/bigquery
+```
+
+## Authentication Methods
+
+BigQuery supports three authentication methods:
+
+1. **Service Account** (recommended for production)
+2. **GCloud CLI** (recommended for local development)
+3. **OAuth Access Token**
+
+## Configuration
+
+### Service Account Authentication
+
+Create a service account in Google Cloud and download the JSON key file.
+
+<CodeGroup>
+```yaml connection.yaml
+name: bigquery
+type: bigquery
+options:
+  project_id: ${BQ_PROJECT_ID}
+  location: US
+  authenticator: service-account
+  client_email: ${BQ_CLIENT_EMAIL}
+  private_key: ${BQ_PRIVATE_KEY}
+```
+
+```env .env
+BQ_PROJECT_ID=my-gcp-project
+BQ_CLIENT_EMAIL=my-service-account@my-project.iam.gserviceaccount.com
+BQ_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----
+```
+</CodeGroup>
+
+### GCloud CLI Authentication
+
+Use your local gcloud credentials (requires `gcloud auth login`).
+
+```yaml connection.yaml
+name: bigquery
+type: bigquery
+options:
+  project_id: ${BQ_PROJECT_ID}
+  location: US
+  authenticator: gcloud-cli
+```
+
+### OAuth Access Token
+
+Use a pre-obtained OAuth access token.
+
+```yaml connection.yaml
+name: bigquery
+type: bigquery
+options:
+  project_id: ${BQ_PROJECT_ID}
+  location: US
+  authenticator: oauth
+  token: ${BQ_ACCESS_TOKEN}
+```
+
+## Configuration Parameters
+
+<ParamField path="project_id" type="string" required>
+  Google Cloud project ID
+</ParamField>
+
+<ParamField path="location" type="string" default="US">
+  BigQuery dataset location/region (e.g., US, EU, us-west1)
+</ParamField>
+
+<ParamField path="authenticator" type="string" required default="service-account">
+  Authentication method: `service-account`, `gcloud-cli`, or `oauth`
+</ParamField>
+
+### Service Account Parameters
+
+<ParamField path="client_email" type="string" required>
+  Service account email address from the credentials JSON file
+</ParamField>
+
+<ParamField path="private_key" type="string" required>
+  Private key from the credentials JSON file. Newlines should be preserved as `\n`
+</ParamField>
+
+<ParamField path="enable_connected_sheets" type="boolean" default={false}>
+  Enable access to Google Sheets. Adds additional OAuth scopes for Drive API access
+</ParamField>
+
+### OAuth Parameters
+
+<ParamField path="token" type="string" required>
+  OAuth 2.0 access token
+</ParamField>
+
+## Using Credentials File
+
+You can reference a credentials JSON file directly:
+
+```yaml connection.yaml
+name: bigquery
+type: bigquery
+options:
+  project_id: ${keyfile.project_id}
+  authenticator: service-account
+  client_email: ${keyfile.client_email}
+  private_key: ${keyfile.private_key}
+  keyfile: ./path/to/credentials.json
+```
+
+## Features
+
+### Type Mapping
+
+BigQuery types are mapped to Evidence types:
+
+- **Numbers**: INT64, NUMERIC, BIGNUMERIC, FLOAT64, DECIMAL
+- **Strings**: STRING, BYTES, GEOGRAPHY, TIME
+- **Dates**: TIMESTAMP, DATE, DATETIME
+- **Booleans**: BOOL, BOOLEAN
+
+### Special Types
+
+- **GEOGRAPHY**: Returned as string values
+- **TIME**: Returned as string values
+- **BYTES**: Returned as base64-encoded strings
+- **Large integers**: Automatically converted to numbers
+
+### Streaming Results
+
+The connector streams query results in batches (default 100,000 rows) for memory-efficient processing of large datasets.
+
+## Example Query
+
+Create a SQL file in your Evidence project:
+
+```sql queries/sales_by_region.sql
+SELECT 
+  region,
+  SUM(revenue) as total_revenue,
+  COUNT(*) as order_count
+FROM `my-project.analytics.sales`
+WHERE order_date >= CURRENT_DATE() - 30
+GROUP BY region
+ORDER BY total_revenue DESC
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Private key formatting issues">
+    Ensure newlines in the private key are escaped as `\n`. When using environment variables, the entire key should be on one line with escaped newlines:
+    
+    ```
+    BQ_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----"
+    ```
+  </Accordion>
+  
+  <Accordion title="Project not found errors">
+    Verify that:
+    - The project ID is correct
+    - The service account has the necessary permissions (BigQuery User, BigQuery Data Viewer)
+    - Billing is enabled for the project
+  </Accordion>
+  
+  <Accordion title="Connected Sheets access">
+    To query Google Sheets data, set `enable_connected_sheets: true`. This adds Drive API scopes to the service account.
+  </Accordion>
+</AccordionGroup>

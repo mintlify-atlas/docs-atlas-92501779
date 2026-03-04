@@ -1,0 +1,264 @@
+---
+title: Environment Variables
+description: Environment variables used by Evidence CLI and runtime
+---
+
+Evidence uses environment variables for configuration, credentials, and build customization. Variables can be set in `.env` files or your shell environment.
+
+## Loading Environment Variables
+
+Evidence automatically loads environment variables from `.env` files with the prefixes:
+
+- `EVIDENCE_*`
+- `VITE_*`
+
+Example `.env` file:
+```bash
+EVIDENCE_DATA_DIR=./custom/data
+VITE_EVIDENCE_SPA=true
+EVIDENCE_VAR__api_key=your_api_key
+```
+
+## Build and Output Directories
+
+### EVIDENCE_BUILD_DIR
+
+<ParamField path="EVIDENCE_BUILD_DIR" type="string" default="./build">
+  Output directory for production builds.
+</ParamField>
+
+**Usage:**
+```bash
+EVIDENCE_BUILD_DIR=./dist evidence build
+```
+
+**Used by:** `evidence build`, `svelte.config.js`
+
+### EVIDENCE_DATA_DIR
+
+<ParamField path="EVIDENCE_DATA_DIR" type="string" default="./static/data">
+  Directory where parquet data files are stored. Used during builds and by the dev server.
+</ParamField>
+
+**Usage:**
+```bash
+EVIDENCE_DATA_DIR=./custom/data evidence sources
+```
+
+**Used by:** `evidence dev`, `evidence build`, `evidence sources`
+
+### EVIDENCE_DATA_URL_PREFIX
+
+<ParamField path="EVIDENCE_DATA_URL_PREFIX" type="string" default="static/data">
+  URL prefix for accessing data files in the browser. Should match the path structure of EVIDENCE_DATA_DIR relative to the static directory.
+</ParamField>
+
+**Usage:**
+```bash
+EVIDENCE_DATA_URL_PREFIX=custom/data evidence dev
+```
+
+**Used by:** `evidence dev`, `evidence build`, `evidence sources`
+
+### EVIDENCE_PAGES_DIR
+
+<ParamField path="EVIDENCE_PAGES_DIR" type="string" default="./pages">
+  Directory containing Evidence markdown pages.
+</ParamField>
+
+**Used by:** Evidence SDK
+
+## Source Configuration
+
+### EVIDENCE_SOURCE__[source]__[option] 
+
+<ParamField path="EVIDENCE_SOURCE__[source]__[option]" type="string">
+  Override any source connection option. Replace `[source]` with your source name and `[option]` with the configuration key.
+</ParamField>
+
+**Pattern:** `EVIDENCE_SOURCE__<SOURCE_NAME>__<OPTION_NAME>`
+
+**Example:**
+```bash
+EVIDENCE_SOURCE__my_database__host=production.db.com
+EVIDENCE_SOURCE__my_database__port=5432
+EVIDENCE_SOURCE__my_database__password=secret123
+```
+
+This overrides options in `sources/my_database/connection.yaml`.
+
+**Used by:** `evidence sources`
+
+### EVIDENCE_VAR__[name] 
+
+<ParamField path="EVIDENCE_VAR__[name]" type="string">
+  Variables for query interpolation. Use `${name}` in your SQL queries and source configurations.
+</ParamField>
+
+**Pattern:** `EVIDENCE_VAR__<VARIABLE_NAME>`
+
+**Example:**
+
+`.env` file:
+```bash
+EVIDENCE_VAR__region=us-east
+EVIDENCE_VAR__api_key=abc123
+```
+
+SQL query (`sources/mydb/orders.sql`):
+```sql
+SELECT * FROM orders WHERE region = '${region}'
+```
+
+Source config (`sources/api/connection.yaml`):
+```yaml
+options:
+  apiKey: ${api_key}
+```
+
+**Used by:** `evidence sources`, query execution
+
+## Runtime and Build Flags
+
+### EVIDENCE_IS_BUILDING
+
+<ParamField path="EVIDENCE_IS_BUILDING" type="boolean" default="false">
+  Set to `true` automatically during builds to indicate build-time execution.
+</ParamField>
+
+**Automatically set by:** `evidence build`
+
+**Usage:** Internal flag, automatically set. Used by Evidence to differentiate build-time from runtime behavior.
+
+### EVIDENCE_STRICT_MODE
+
+<ParamField path="EVIDENCE_STRICT_MODE" type="boolean" default="false">
+  Enable strict mode which fails on warnings and errors. Used by `evidence build:strict`.
+</ParamField>
+
+**Automatically set by:** `evidence build:strict`
+
+**Usage:**
+```bash
+evidence build:strict
+```
+
+### EVIDENCE_DEBUG
+
+<ParamField path="EVIDENCE_DEBUG" type="boolean" default="false">
+  Enable debug logging for Evidence internals (Node.js environment).
+</ParamField>
+
+**Set by:** `--debug` flag on CLI commands
+
+**Example:**
+```bash
+evidence dev --debug
+evidence build --debug
+evidence sources --debug
+```
+
+Also sets `VITE_EVIDENCE_DEBUG` and `VITE_PUBLIC_EVIDENCE_DEBUG`.
+
+### VITE_EVIDENCE_DEBUG
+
+<ParamField path="VITE_EVIDENCE_DEBUG" type="boolean" default="false">
+  Enable debug logging in Vite build and runtime.
+</ParamField>
+
+**Set by:** `--debug` flag or manually in `.env`
+
+**Used by:** Evidence SDK, query engine
+
+### VITE_PUBLIC_EVIDENCE_DEBUG
+
+<ParamField path="VITE_PUBLIC_EVIDENCE_DEBUG" type="boolean" default="false">
+  Enable debug logging in browser runtime.
+</ParamField>
+
+**Set by:** `--debug` flag or manually in `.env`
+
+## Deployment and URLs
+
+### EVIDENCE_URL_PREFIX
+
+<ParamField path="EVIDENCE_URL_PREFIX" type="string" default="_evidence">
+  URL prefix for Evidence internal routes and assets.
+</ParamField>
+
+**Used by:** Evidence SDK routing
+
+### VITE_EVIDENCE_SPA
+
+<ParamField path="VITE_EVIDENCE_SPA" type="boolean" default="false">
+  Build and serve the application in single-page application (SPA) mode with client-side routing.
+</ParamField>
+
+**Usage:**
+```bash
+VITE_EVIDENCE_SPA=true evidence build
+VITE_EVIDENCE_SPA=true evidence preview
+```
+
+**Used by:** `evidence preview`, SvelteKit adapter
+
+## Node.js Configuration
+
+### NODE_OPTIONS
+
+<ParamField path="NODE_OPTIONS" type="string">
+  Node.js runtime options. Evidence automatically adds `--max-old-space-size=4096` if not already set.
+</ParamField>
+
+**Auto-configured by:** All Evidence CLI commands
+
+**Example manual override:**
+```bash
+NODE_OPTIONS="--max-old-space-size=8192" evidence build
+```
+
+## Advanced Configuration
+
+### EVIDENCE_DISABLE_INCLUDE
+
+<ParamField path="EVIDENCE_DISABLE_INCLUDE" type="boolean" default="false">
+  Disable automatic inclusion of Evidence dependencies during the build. Advanced use only.
+</ParamField>
+
+**Used by:** Build template script
+
+## Debugging Environment Variables
+
+Use the `env-debug` command to see all Evidence-related environment variables:
+
+```bash
+evidence env-debug
+```
+
+To include values (⚠️ **will show secrets**):
+```bash
+evidence env-debug --include-values
+```
+
+Output:
+```bash
+┌─────────┬──────────────────────────┐
+│ (index) │          Values          │
+├─────────┼──────────────────────────┤
+│ EVIDENCE_DATA_DIR │ './static/data' │
+│ EVIDENCE_VAR__region │ 'us-east'    │
+└─────────┴──────────────────────────┘
+```
+
+## Environment Variable Precedence
+
+1. Shell environment variables (highest priority)
+2. `.env` file in project root
+3. Default values (lowest priority)
+
+## Related
+
+- [evidence dev](/cli/dev) - Development server
+- [evidence build](/cli/build) - Production builds
+- [evidence sources](/cli/sources) - Source data generation
+- [Configuration File](/cli/config-file) - Configuration files

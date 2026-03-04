@@ -1,0 +1,523 @@
+---
+title: Markdown
+description: Write content using Evidence-flavored markdown with SQL queries and components
+---
+
+# Markdown in Evidence
+
+Evidence uses **Evidence-flavored Markdown** - standard markdown extended with SQL queries, data visualization components, and programmatic features.
+
+<Info>
+If you've written markdown in GitHub, Slack, or Notion, you already know the basics.
+</Info>
+
+## Text Formatting
+
+### Paragraphs
+
+```markdown
+This is a paragraph. Write naturally with line breaks.
+
+Leave a blank line to start a new paragraph.
+```
+
+### Text Styles
+
+```markdown
+**Bold text** uses double asterisks
+*Italic text* uses single asterisks  
+~~Strikethrough~~ uses double tildes
+`Inline code` uses backticks
+```
+
+**Output:**
+
+**Bold text** uses double asterisks
+*Italic text* uses single asterisks  
+~~Strikethrough~~ uses double tildes
+`Inline code` uses backticks
+
+## Headers
+
+```markdown
+# Page Title (H1)
+
+## Section Header (H2)
+
+### Subsection (H3)
+
+#### H4 Header
+
+##### H5 Header
+
+###### H6 Header
+```
+
+<Tip>
+Use only one H1 per page (automatically created from frontmatter title). Start your content with H2 headers.
+</Tip>
+
+## Lists
+
+### Unordered Lists
+
+```markdown
+- First item
+- Second item
+  - Nested item
+  - Another nested item
+- Third item
+```
+
+**Output:**
+
+- First item
+- Second item
+  - Nested item
+  - Another nested item
+- Third item
+
+### Ordered Lists
+
+```markdown
+1. First step
+1. Second step  
+1. Third step
+```
+
+**Output:**
+
+1. First step
+1. Second step  
+1. Third step
+
+<Note>
+The numbers you type don't matter - markdown automatically numbers lists correctly.
+</Note>
+
+## Links
+
+### External Links
+
+```markdown
+[Visit Evidence](https://evidence.dev)
+[GitHub Repository](https://github.com/evidence-dev/evidence)
+```
+
+### Internal Links
+
+```markdown
+[Go to Dashboard](/dashboard)
+[View Settings](/settings)
+[Other Section](#section-header)
+```
+
+Internal links use paths relative to your `pages/` directory.
+
+### Links with Components
+
+Use the Link component for styled links:
+
+```markdown
+<Link href="/dashboard">View Dashboard →</Link>
+```
+
+## Images
+
+### Static Images
+
+Store images in the `/static` folder:
+
+```
+project/
+  pages/
+  static/
+    logo.png
+    charts/
+      sales-overview.png
+```
+
+Reference them with:
+
+```markdown
+![Company Logo](/logo.png)
+![Sales Chart](/charts/sales-overview.png)
+```
+
+### External Images
+
+```markdown
+![Description](https://example.com/image.png)
+```
+
+### Images with Components
+
+```markdown
+<Image 
+    src="/logo.png"
+    alt="Company Logo"
+    width=200
+/>
+```
+
+## Code Fences
+
+### SQL Queries
+
+SQL code fences execute queries and return data:
+
+````markdown
+```sql orders
+SELECT 
+    DATE_TRUNC('month', order_date) as month,
+    COUNT(*) as order_count,
+    SUM(total) as revenue
+FROM orders
+WHERE order_date >= '2024-01-01'
+GROUP BY month
+ORDER BY month
+```
+````
+
+<Info>
+SQL queries in Evidence use the **DuckDB dialect**, not your source database's dialect.
+</Info>
+
+### Non-Executing Code Blocks
+
+Display code without executing it using reserved language names:
+
+````markdown
+```python
+def calculate_revenue(sales, costs):
+    return sales - costs
+
+revenue = calculate_revenue(10000, 3000)
+print(f"Revenue: ${revenue}")
+```
+````
+
+````markdown
+```javascript
+const data = await fetch('/api/sales');
+const json = await data.json();
+console.log(json);
+```
+````
+
+````markdown
+```r
+library(dplyr)
+
+df <- read.csv("data.csv")
+summary <- df %>% 
+  group_by(category) %>%
+  summarise(total = sum(sales))
+```
+````
+
+Supported languages: `python`, `r`, `javascript`, `bash`, `json`, `yaml`, `html`, `css`, and [more](https://github.com/evidence-dev/evidence/blob/main/packages/lib/preprocess/src/utils/supportedLanguages.cjs).
+
+## Tables
+
+### Markdown Tables
+
+```markdown
+| Product | Price | Stock |
+|---------|-------|-------|
+| Laptop  | $999  | 45    |
+| Mouse   | $25   | 230   |
+| Keyboard| $79   | 120   |
+```
+
+**Output:**
+
+| Product | Price | Stock |
+|---------|-------|-------|
+| Laptop  | $999  | 45    |
+| Mouse   | $25   | 230   |
+| Keyboard| $79   | 120   |
+
+### Data Tables
+
+For query results, use the DataTable component instead:
+
+````markdown
+```sql products
+SELECT product, price, stock
+FROM inventory
+```
+
+<DataTable data={products} />
+````
+
+## Blockquotes
+
+```markdown
+> Important information or quotes appear in blockquotes.
+>
+> They can span multiple lines.
+>
+> > And can be nested
+```
+
+**Output:**
+
+> Important information or quotes appear in blockquotes.
+>
+> They can span multiple lines.
+
+## Horizontal Rules
+
+```markdown
+Content above
+
+---
+
+Content below
+```
+
+**Output:**
+
+Content above
+
+---
+
+Content below
+
+## Frontmatter
+
+Frontmatter adds metadata to your page and must appear at the very start:
+
+```yaml
+---
+title: Sales Dashboard
+description: Monthly sales performance metrics
+hide_title: false
+queries:
+  - monthly_sales.sql
+  - customer_metrics.sql
+---
+```
+
+### Common Frontmatter Properties
+
+**Page Display:**
+- `title`: Page title (tab, sidebar, breadcrumb, H1)
+- `hide_title`: Don't show title as H1 on page
+- `description`: SEO description
+
+**Navigation:**
+- `sidebar_position`: Order in sidebar (number)
+- `sidebar_link`: Show/hide in sidebar (true/false)
+- `hide_breadcrumbs`: Hide breadcrumb navigation
+
+**Queries:**
+- `queries`: List of SQL files from `/queries` directory
+
+**Layout:**
+- `full_width`: Use full screen width
+- `max_width`: Set custom max width in pixels
+- `hide_header`: Hide the page header
+- `hide_toc`: Hide table of contents
+
+**Social Sharing:**
+```yaml
+og:
+  title: Custom Share Title
+  description: Description for social media
+  image: /share-image.png
+```
+
+### Example Frontmatter
+
+```yaml
+---
+title: Customer Analytics
+description: Deep dive into customer behavior and revenue
+sidebar_position: 2
+full_width: true
+queries:
+  - customers: customer_data.sql
+  - revenue: monthly_revenue.sql
+og:
+  title: Customer Analytics Dashboard
+  description: Interactive customer insights and trends
+  image: /dashboard-preview.png
+---
+```
+
+## JavaScript Expressions
+
+Curly braces `{ }` execute JavaScript:
+
+```markdown
+2 + 2 = {2 + 2}
+<!-- Output: 2 + 2 = 4 -->
+
+There are {orders.length} orders in the dataset.
+<!-- Output: There are 1,543 orders in the dataset. -->
+
+The average is {(total / count).toFixed(2)}
+<!-- Output: The average is 45.67 -->
+
+Today is {new Date().toLocaleDateString()}
+<!-- Output: Today is 3/4/2026 -->
+```
+
+### Accessing Query Data
+
+````markdown
+```sql summary
+SELECT 
+    COUNT(*) as total_orders,
+    SUM(revenue) as total_revenue
+FROM orders
+```
+
+We processed {summary[0].total_orders} orders totaling {summary[0].total_revenue} in revenue.
+````
+
+## Partials
+
+Reuse chunks of markdown across multiple pages using partials.
+
+### Creating a Partial
+
+Create files in the `/partials` directory:
+
+```
+project/
+  pages/
+    dashboard.md
+  partials/
+    header.md
+    footer.md
+```
+
+`partials/header.md`:
+```markdown
+# Company Dashboard
+
+Last updated: {new Date().toLocaleDateString()}
+
+---
+```
+
+### Using a Partial
+
+`pages/dashboard.md`:
+```markdown
+{@partial "header.md"}
+
+Dashboard content goes here...
+
+{@partial "footer.md"}
+```
+
+<Warning>
+Partials don't support live reload. Refresh the page after changing a partial.
+</Warning>
+
+## Page Variables
+
+Access information about the current page:
+
+```markdown
+Current page: {$page.route.id}
+<!-- Output: Current page: /core-concepts/markdown -->
+
+URL params: {JSON.stringify($page.params)}
+<!-- Output: URL params: {"customer_id": "acme"} -->
+```
+
+Useful variables:
+- `{$page.route.id}`: Current page path
+- `{$page.params}`: URL parameters from templated pages
+- `{$page.url}`: Full URL object
+
+## Combining Markdown with Evidence Features
+
+Here's how markdown works with Evidence's special features:
+
+````markdown
+---
+title: Monthly Sales Report
+---
+
+# Sales Performance
+
+## Overview
+
+Our sales team achieved **outstanding results** this quarter.
+
+```sql monthly_sales
+SELECT 
+    DATE_TRUNC('month', order_date) as month,
+    SUM(revenue) as revenue,
+    COUNT(*) as orders
+FROM orders
+GROUP BY month
+ORDER BY month DESC
+```
+
+We generated <Value data={monthly_sales} column="revenue" fmt="usd"/> from <Value data={monthly_sales} column="orders"/> orders.
+
+<LineChart 
+    data={monthly_sales}
+    x="month"
+    y="revenue"
+    title="Revenue Trend"
+/>
+
+{#if monthly_sales[0].revenue > 100000}
+
+<Alert status=success>
+Excellent! We exceeded $100k this month.
+</Alert>
+
+{:else}
+
+<Alert status=info>
+We're on track to reach our monthly goal.
+</Alert>
+
+{/if}
+
+## Regional Breakdown
+
+```sql regions
+SELECT region, SUM(revenue) as revenue
+FROM orders
+GROUP BY region
+ORDER BY revenue DESC
+```
+
+{#each regions as region}
+- **{region.region}**: <Value data={region} column="revenue" fmt="usd0k"/>
+{/each}
+
+---
+
+*For questions, contact [analytics@company.com](mailto:analytics@company.com)*
+````
+
+## Quick Reference
+
+| Element | Syntax |
+|---------|--------|
+| Bold | `**text**` |
+| Italic | `*text*` |
+| Code | `` `code` `` |
+| Link | `[text](url)` |
+| Image | `![alt](url)` |
+| Header | `## Heading` |
+| List | `- item` or `1. item` |
+| Blockquote | `> quote` |
+| Horizontal Rule | `---` |
+| Query | ` ```sql name` |
+| Expression | `{javascript}` |
+
+<Tip>
+For more markdown syntax details, see the [CommonMark specification](https://commonmark.org/) or the [Markdown Guide](https://www.markdownguide.org/).
+</Tip>

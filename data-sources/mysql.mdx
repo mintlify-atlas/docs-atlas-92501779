@@ -1,0 +1,276 @@
+---
+title: "MySQL"
+description: "Connect Evidence to MySQL databases"
+---
+
+## Installation
+
+Install the MySQL connector:
+
+```bash
+npm install @evidence-dev/mysql
+```
+
+## Configuration
+
+<CodeGroup>
+```yaml connection.yaml
+name: mysql
+type: mysql
+options:
+  host: localhost
+  port: 3306
+  database: mydb
+  user: ${MYSQL_USER}
+  password: ${MYSQL_PASSWORD}
+```
+
+```env .env
+MYSQL_USER=username
+MYSQL_PASSWORD=your_secure_password
+```
+</CodeGroup>
+
+## Configuration Parameters
+
+<ParamField path="host" type="string" required>
+  Database hostname or IP address
+</ParamField>
+
+<ParamField path="port" type="number" default={3306}>
+  Database port
+</ParamField>
+
+<ParamField path="database" type="string" required>
+  Database name to connect to
+</ParamField>
+
+<ParamField path="user" type="string" required>
+  Username for authentication
+</ParamField>
+
+<ParamField path="password" type="string" required>
+  Password for authentication
+</ParamField>
+
+<ParamField path="socketPath" type="string">
+  Unix socket path (commonly required for Google Cloud SQL)
+</ParamField>
+
+<ParamField path="ssl" type="string">
+  SSL configuration: `"true"`, `"false"`, `"Amazon RDS"`, or a JSON object with SSL options
+</ParamField>
+
+## SSL/TLS Configuration
+
+### Basic SSL
+
+```yaml connection.yaml
+name: mysql
+type: mysql
+options:
+  host: mydb.example.com
+  port: 3306
+  database: mydb
+  user: ${MYSQL_USER}
+  password: ${MYSQL_PASSWORD}
+  ssl: "true"
+```
+
+### Amazon RDS SSL
+
+```yaml connection.yaml
+name: mysql_rds
+type: mysql
+options:
+  host: mydb.abc123.us-east-1.rds.amazonaws.com
+  port: 3306
+  database: mydb
+  user: ${MYSQL_USER}
+  password: ${MYSQL_PASSWORD}
+  ssl: "Amazon RDS"
+```
+
+### Custom SSL Options
+
+Provide SSL options as a JSON string:
+
+```yaml connection.yaml
+name: mysql
+type: mysql
+options:
+  host: mydb.example.com
+  database: mydb
+  user: ${MYSQL_USER}
+  password: ${MYSQL_PASSWORD}
+  ssl: '{"rejectUnauthorized": true}'
+```
+
+## Features
+
+### Type Mapping
+
+MySQL types are mapped to Evidence types:
+
+- **Numbers**: DECIMAL, TINYINT, SMALLINT, INT, BIGINT, FLOAT, DOUBLE
+- **Strings**: VARCHAR, CHAR, TEXT, JSON
+- **Dates**: TIMESTAMP, DATE, DATETIME, TIME, YEAR
+
+<Note>
+  MySQL does not have a native BOOLEAN type. TINYINT(1) is commonly used and mapped to numbers in Evidence.
+</Note>
+
+### Column Name Normalization
+
+MySQL column names are automatically converted to lowercase for consistency.
+
+### Decimal Precision
+
+The connector preserves decimal precision by parsing DECIMAL and NUMERIC types as JavaScript numbers.
+
+### Streaming Results
+
+Queries stream results in batches (default 100,000 rows) for efficient memory usage with large datasets.
+
+## Example Query
+
+Create a SQL file in your Evidence project:
+
+```sql queries/monthly_revenue.sql
+SELECT 
+  DATE_FORMAT(order_date, '%Y-%m') as month,
+  SUM(total_amount) as revenue,
+  COUNT(*) as order_count,
+  AVG(total_amount) as avg_order_value
+FROM orders
+WHERE order_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+GROUP BY 1
+ORDER BY 1 DESC
+```
+
+## Cloud Providers
+
+### Google Cloud SQL
+
+When connecting to Google Cloud SQL, you may need to use Unix socket connections:
+
+```yaml connection.yaml
+name: mysql_cloudsql
+type: mysql
+options:
+  socketPath: /cloudsql/project:region:instance
+  database: mydb
+  user: ${MYSQL_USER}
+  password: ${MYSQL_PASSWORD}
+```
+
+<Tip>
+  For Cloud SQL, you can find the instance connection name in the Google Cloud Console under your SQL instance details.
+</Tip>
+
+### Amazon RDS
+
+```yaml connection.yaml
+name: mysql_rds
+type: mysql
+options:
+  host: mydb.abc123.us-east-1.rds.amazonaws.com
+  port: 3306
+  database: mydb
+  user: ${MYSQL_USER}
+  password: ${MYSQL_PASSWORD}
+  ssl: "Amazon RDS"
+```
+
+### Azure Database for MySQL
+
+```yaml connection.yaml
+name: mysql_azure
+type: mysql
+options:
+  host: myserver.mysql.database.azure.com
+  port: 3306
+  database: mydb
+  user: username@myserver
+  password: ${MYSQL_PASSWORD}
+  ssl: "true"
+```
+
+## Performance Tips
+
+### Use Indexes
+
+Ensure commonly queried columns have indexes:
+
+```sql
+CREATE INDEX idx_order_date ON orders(order_date);
+CREATE INDEX idx_customer_id ON orders(customer_id);
+```
+
+### Limit Result Sets
+
+For large tables, always filter data:
+
+```sql
+-- Good: filtered query
+SELECT * FROM orders
+WHERE order_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+
+-- Avoid: unbounded query
+SELECT * FROM orders
+```
+
+### Optimize Joins
+
+```sql
+SELECT 
+  c.customer_name,
+  COUNT(o.order_id) as order_count
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+  AND o.order_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+GROUP BY c.customer_id, c.customer_name
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection refused">
+    - Verify host and port are correct
+    - Check that MySQL is running
+    - Ensure firewall allows connections from your Evidence instance
+    - Verify the user has remote access privileges:
+      ```sql
+      GRANT ALL PRIVILEGES ON database.* TO 'username'@'%' IDENTIFIED BY 'password';
+      FLUSH PRIVILEGES;
+      ```
+  </Accordion>
+  
+  <Accordion title="SSL connection errors">
+    For cloud providers:
+    - Amazon RDS: Use `ssl: "Amazon RDS"`
+    - Google Cloud SQL: Use `ssl: "true"` with socket connections
+    - Azure: Use `ssl: "true"`
+  </Accordion>
+  
+  <Accordion title="Authentication plugin errors">
+    If you see "ER_NOT_SUPPORTED_AUTH_MODE" or authentication plugin errors, you may need to update the user's authentication method:
+    ```sql
+    ALTER USER 'username'@'%' IDENTIFIED WITH mysql_native_password BY 'password';
+    ```
+  </Accordion>
+  
+  <Accordion title="Google Cloud SQL socket errors">
+    Ensure:
+    - The socket path format is correct: `/cloudsql/project:region:instance`
+    - The Cloud SQL Proxy is running (if connecting from outside Google Cloud)
+    - Your service account has the Cloud SQL Client role
+  </Accordion>
+  
+  <Accordion title="Character encoding issues">
+    Ensure your database uses UTF-8 encoding:
+    ```sql
+    ALTER DATABASE mydb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    ```
+  </Accordion>
+</AccordionGroup>

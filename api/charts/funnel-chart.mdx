@@ -1,0 +1,204 @@
+---
+title: FunnelChart
+description: Visualize progressive reduction of data through stages using a funnel shape
+---
+
+# FunnelChart
+
+The `FunnelChart` component displays data as progressively smaller sections in a funnel shape, making it ideal for conversion funnels, sales pipelines, and sequential processes where values decrease at each stage.
+
+## Props
+
+### Data Props
+
+<ParamField path="data" type="Query | array" required>
+  Query result or array of objects containing the data to visualize
+</ParamField>
+
+<ParamField path="nameCol" type="string" required>
+  Column name containing stage names
+</ParamField>
+
+<ParamField path="valueCol" type="string" required>
+  Column name containing numeric values for each stage
+</ParamField>
+
+### Formatting Props
+
+<ParamField path="valueFmt" type="string">
+  Format string for values
+</ParamField>
+
+### Chart Layout Props
+
+<ParamField path="title" type="string">
+  Chart title displayed at the top
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  Chart subtitle displayed below the title
+</ParamField>
+
+<ParamField path="legend" type="boolean" default={true}>
+  Whether to show the legend
+</ParamField>
+
+### Funnel Style Props
+
+<ParamField path="labelPosition" type="string" default="inside">
+  Position of value labels: 'inside' | 'outside'
+</ParamField>
+
+<ParamField path="funnelAlign" type="string" default="center">
+  Horizontal alignment of funnel: 'center' | 'left' | 'right'
+</ParamField>
+
+<ParamField path="funnelSort" type="string" default="none">
+  Sort order for stages: 'none' | 'ascending' | 'descending'
+</ParamField>
+
+<ParamField path="outlineColor" type="string">
+  Color for funnel section outlines
+</ParamField>
+
+<ParamField path="outlineWidth" type="number">
+  Width of outlines in pixels
+</ParamField>
+
+<ParamField path="showPercent" type="boolean" default={false}>
+  Show percentage of initial value for each stage
+</ParamField>
+
+### Color Props
+
+<ParamField path="colorPalette" type="string | array" default="default">
+  Color palette name or array of colors
+</ParamField>
+
+### Advanced Props
+
+<ParamField path="echartsOptions" type="object">
+  Custom ECharts configuration object
+</ParamField>
+
+<ParamField path="seriesOptions" type="object">
+  Custom series configuration
+</ParamField>
+
+<ParamField path="printEchartsConfig" type="boolean" default={false}>
+  Print ECharts config to console
+</ParamField>
+
+<ParamField path="renderer" type="string">
+  Renderer type: 'canvas' | 'svg'
+</ParamField>
+
+<ParamField path="connectGroup" type="string">
+  Connect charts for synchronized interactions
+</ParamField>
+
+<ParamField path="emptySet" type="string">
+  Empty data behavior: 'pass' | 'warn' | 'error'
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom empty data message
+</ParamField>
+
+## Examples
+
+### Basic Funnel Chart
+
+```markdown
+```sql conversion_funnel
+select 'Visit' as stage, 10000 as users
+union all select 'Sign Up', 5000
+union all select 'Active User', 2500
+union all select 'Paying Customer', 1000
+```
+
+<FunnelChart data={conversion_funnel} nameCol="stage" valueCol="users" />
+```
+
+### Funnel with Percentages
+
+```markdown
+<FunnelChart 
+  data={conversion_funnel} 
+  nameCol="stage"
+  valueCol="users"
+  showPercent="true"
+  title="Conversion Funnel"
+  subtitle="Last 30 days"
+/>
+```
+
+### Outside Labels
+
+```markdown
+<FunnelChart 
+  data={conversion_funnel} 
+  nameCol="stage"
+  valueCol="users"
+  labelPosition="outside"
+  valueFmt="#,##0"
+/>
+```
+
+### Left-Aligned Funnel
+
+```markdown
+<FunnelChart 
+  data={conversion_funnel} 
+  nameCol="stage"
+  valueCol="users"
+  funnelAlign="left"
+  title="Sales Pipeline"
+/>
+```
+
+### Sorted Funnel
+
+```markdown
+```sql sales_by_region
+select region as name, revenue as value
+from regional_sales
+```
+
+<FunnelChart 
+  data={sales_by_region} 
+  nameCol="name"
+  valueCol="value"
+  funnelSort="descending"
+  title="Revenue by Region"
+  valueFmt="usd0k"
+/>
+```
+
+### Custom Colors and Styling
+
+```markdown
+<FunnelChart 
+  data={conversion_funnel} 
+  nameCol="stage"
+  valueCol="users"
+  colorPalette={['#4F46E5', '#7C3AED', '#DB2777', '#F59E0B']}
+  outlineColor="white"
+  outlineWidth=2
+  showPercent="true"
+  valueFmt="#,##0"
+/>
+```
+
+### With Legend
+
+```markdown
+<FunnelChart 
+  data={conversion_funnel} 
+  nameCol="stage"
+  valueCol="users"
+  legend="true"
+  title="Marketing Funnel Performance"
+  showPercent="true"
+/>
+```

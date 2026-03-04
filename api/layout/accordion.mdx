@@ -1,0 +1,211 @@
+---
+title: Accordion
+description: Create expandable content sections with collapsible accordion items
+icon: bars-staggered
+---
+
+The Accordion component creates expandable and collapsible content sections, allowing users to show and hide information on demand. Perfect for FAQs, documentation, or any content that benefits from progressive disclosure.
+
+## Basic Usage
+
+```html
+<Accordion>
+  <AccordionItem title="First Section">
+    <p>Content for the first section</p>
+  </AccordionItem>
+  <AccordionItem title="Second Section">
+    <p>Content for the second section</p>
+  </AccordionItem>
+  <AccordionItem title="Third Section">
+    <p>Content for the third section</p>
+  </AccordionItem>
+</Accordion>
+```
+
+## Accordion Props
+
+<ParamField path="single" type="boolean" default="false">
+  Controls whether only one accordion item can be open at a time. When `true`, opening a new item automatically closes the previously open item. When `false` (default), multiple items can be open simultaneously.
+</ParamField>
+
+<ParamField path="class" type="string" default="undefined">
+  Custom CSS classes to apply to the accordion container for styling.
+</ParamField>
+
+## AccordionItem Props
+
+<ParamField path="title" type="string" required>
+  The heading text displayed in the accordion item header. This is always visible and serves as the clickable trigger to expand/collapse the item.
+</ParamField>
+
+<ParamField path="compact" type="boolean" default="false">
+  Reduces the vertical padding of the accordion header for a more condensed appearance.
+</ParamField>
+
+<ParamField path="description" type="string" default="undefined">
+  Optional description text shown alongside the title. Displays an info icon that reveals the description on hover.
+</ParamField>
+
+<ParamField path="class" type="string" default="undefined">
+  Custom CSS classes to apply to the individual accordion item.
+</ParamField>
+
+## Examples
+
+### Multiple Open Items (Default)
+
+```html
+<Accordion>
+  <AccordionItem title="Revenue by Region">
+    <BarChart data={revenue_by_region} />
+  </AccordionItem>
+  <AccordionItem title="Revenue Over Time">
+    <LineChart data={revenue_trend} />
+  </AccordionItem>
+  <AccordionItem title="Top Products">
+    <DataTable data={top_products} />
+  </AccordionItem>
+</Accordion>
+```
+
+By default, users can expand multiple items at once to compare information.
+
+### Single Mode
+
+```html
+<Accordion single>
+  <AccordionItem title="Q1 Results">
+    <p>First quarter performance metrics</p>
+  </AccordionItem>
+  <AccordionItem title="Q2 Results">
+    <p>Second quarter performance metrics</p>
+  </AccordionItem>
+  <AccordionItem title="Q3 Results">
+    <p>Third quarter performance metrics</p>
+  </AccordionItem>
+  <AccordionItem title="Q4 Results">
+    <p>Fourth quarter performance metrics</p>
+  </AccordionItem>
+</Accordion>
+```
+
+With `single=true`, only one quarter's results can be viewed at a time.
+
+### Compact Style
+
+```html
+<Accordion>
+  <AccordionItem title="Methodology" compact>
+    <p>Brief description of analysis methodology</p>
+  </AccordionItem>
+  <AccordionItem title="Data Sources" compact>
+    <p>List of data sources used</p>
+  </AccordionItem>
+  <AccordionItem title="Assumptions" compact>
+    <p>Key assumptions made in the analysis</p>
+  </AccordionItem>
+</Accordion>
+```
+
+### With Descriptions
+
+```html
+<Accordion>
+  <AccordionItem 
+    title="Sales Performance" 
+    description="Year-over-year sales metrics and trends"
+  >
+    <DataTable data={sales_data} />
+  </AccordionItem>
+  <AccordionItem 
+    title="Customer Metrics" 
+    description="Customer acquisition, retention, and lifetime value"
+  >
+    <DataTable data={customer_data} />
+  </AccordionItem>
+</Accordion>
+```
+
+### Custom Styling
+
+```html
+<Accordion class="rounded-xl bg-base-200 px-4">
+  <AccordionItem title="Appendix A" class="border-none">
+    <p>Additional information and references</p>
+  </AccordionItem>
+  <AccordionItem title="Appendix B" class="border-none">
+    <p>Supplementary data tables</p>
+  </AccordionItem>
+  <AccordionItem title="Glossary" class="border-none">
+    <p>Terms and definitions</p>
+  </AccordionItem>
+</Accordion>
+```
+
+### FAQ Section
+
+```html
+<Accordion single>
+  <AccordionItem title="How do I filter the data?">
+    <p>Use the dropdown menu at the top of the page to select your filter criteria.</p>
+  </AccordionItem>
+  <AccordionItem title="Can I export the results?">
+    <p>Yes, click the download button in the top right corner to export as CSV or PDF.</p>
+  </AccordionItem>
+  <AccordionItem title="How often is the data updated?">
+    <p>Data is refreshed daily at 6 AM EST.</p>
+  </AccordionItem>
+</Accordion>
+```
+
+### Complex Content
+
+```html
+<Accordion>
+  <AccordionItem title="Executive Summary">
+    <h3>Key Findings</h3>
+    <ul>
+      <li>Revenue up 25% year-over-year</li>
+      <li>Customer acquisition cost decreased by 15%</li>
+      <li>Retention rate improved to 92%</li>
+    </ul>
+    <BarChart data={summary_metrics} />
+  </AccordionItem>
+  <AccordionItem title="Detailed Analysis">
+    <Grid cols=2lt;Grid cols="2">
+      <div>
+        <h4>Revenue Breakdown</h4>
+        <PieChart data={revenue_breakdown} />
+      </div>
+      <div>
+        <h4>Growth Trend</h4>
+        <LineChart data={growth_trend} />
+      </div>
+    </Grid>
+  </AccordionItem>
+</Accordion>
+```
+
+## Use Cases
+
+- **Report appendices**: Hide supplementary information until needed
+- **FAQ sections**: Organize questions and answers efficiently
+- **Multi-section reports**: Break long reports into expandable sections
+- **Data exploration**: Allow users to drill into specific areas of interest
+- **Documentation**: Structure help content and guides
+- **Methodology details**: Tuck away technical details while keeping them accessible
+
+## Accessibility
+
+- Keyboard navigable (Enter/Space to toggle, Tab to navigate)
+- Proper ARIA attributes for screen readers
+- Clear visual indicators for expanded/collapsed states
+- Focus management when opening/closing items
+
+## Notes
+
+- The Accordion is built on the shadcn/ui accordion component
+- Smooth animations when expanding and collapsing
+- State is maintained when navigating between items
+- All Evidence components (charts, tables, etc.) work inside accordion items
+- Content inside collapsed items is not rendered in the DOM until expanded

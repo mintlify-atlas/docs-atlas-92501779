@@ -1,0 +1,271 @@
+---
+title: "SQLite"
+description: "Connect Evidence to SQLite databases"
+---
+
+## Installation
+
+Install the SQLite connector:
+
+```bash
+npm install @evidence-dev/sqlite
+```
+
+## Configuration
+
+```yaml connection.yaml
+name: sqlite
+type: sqlite
+options:
+  filename: data.sqlite
+```
+
+<Note>
+  The `filename` path is relative to your **sources directory**, not your project root.
+</Note>
+
+## Configuration Parameters
+
+<ParamField path="filename" type="string" required default="needful_things.sqlite">
+  SQLite database filename. Path is relative to your sources directory.
+</ParamField>
+
+## Features
+
+### Type Mapping
+
+SQLite has dynamic typing, but the connector infers Evidence types:
+
+- **Numbers**: INTEGER, REAL, NUMERIC
+- **Strings**: TEXT, VARCHAR, CHAR
+- **Dates**: Date/timestamp columns (stored as TEXT or INTEGER in SQLite)
+- **Booleans**: INTEGER values (0 = false, non-zero = true)
+
+### Date Handling
+
+SQLite stores dates as strings or integers. The connector automatically converts date columns to JavaScript Date objects based on inferred column types.
+
+### Read-Only Access
+
+Connections are opened in **read-only mode** to prevent accidental modifications to your database.
+
+### Streaming Results
+
+Results are streamed in batches (default 100,000 rows) for efficient memory usage.
+
+## Example Query
+
+Create a SQL file in your Evidence project:
+
+```sql queries/user_signups.sql
+SELECT 
+  DATE(created_at) as signup_date,
+  COUNT(*) as signups,
+  SUM(CASE WHEN activated = 1 THEN 1 ELSE 0 END) as activated_count
+FROM users
+WHERE created_at >= DATE('now', '-30 days')
+GROUP BY DATE(created_at)
+ORDER BY signup_date DESC
+```
+
+## SQLite Functions
+
+### Date Functions
+
+```sql queries/date_examples.sql
+SELECT 
+  DATE('now') as today,
+  DATE('now', '-7 days') as week_ago,
+  DATETIME('now') as current_timestamp,
+  STRFTIME('%Y-%m', created_at) as year_month
+FROM events
+```
+
+### Aggregation Functions
+
+```sql queries/aggregations.sql
+SELECT 
+  product_category,
+  COUNT(*) as total_orders,
+  SUM(amount) as total_revenue,
+  AVG(amount) as avg_order_value,
+  MIN(amount) as min_order,
+  MAX(amount) as max_order
+FROM orders
+GROUP BY product_category
+```
+
+### JSON Functions (SQLite 3.38.0+)
+
+```sql queries/json_data.sql
+SELECT 
+  user_id,
+  JSON_EXTRACT(metadata, '$.name') as user_name,
+  JSON_EXTRACT(metadata, '$.email') as email
+FROM users
+WHERE JSON_EXTRACT(metadata, '$.active') = 'true'
+```
+
+## Creating a SQLite Database
+
+You can create a SQLite database for use with Evidence:
+
+### Using Python
+
+```python create_database.py
+import sqlite3
+import pandas as pd
+
+# Create database
+conn = sqlite3.connect('data.sqlite')
+
+# Load data from CSV
+df = pd.read_csv('sales_data.csv')
+df.to_sql('sales', conn, if_exists='replace', index=False)
+
+conn.close()
+```
+
+### Using SQLite CLI
+
+```bash
+# Create database and import CSV
+sqlite3 data.sqlite
+.mode csv
+.import sales_data.csv sales
+.quit
+```
+
+### Using DuckDB
+
+Export data from DuckDB to SQLite:
+
+```sql
+INSTALL sqlite;
+LOAD sqlite;
+
+ATTACH 'data.sqlite' AS sqlite_db (TYPE SQLITE);
+
+CREATE TABLE sqlite_db.sales AS 
+SELECT * FROM read_csv('sales_data.csv');
+```
+
+## Performance Tips
+
+### Create Indexes
+
+Add indexes to commonly queried columns:
+
+```sql
+CREATE INDEX idx_date ON orders(order_date);
+CREATE INDEX idx_customer ON orders(customer_id);
+```
+
+### Use Query Planning
+
+Analyze query performance:
+
+```sql
+EXPLAIN QUERY PLAN
+SELECT * FROM orders
+WHERE order_date >= DATE('now', '-30 days');
+```
+
+### Analyze Tables
+
+Keep statistics up to date:
+
+```sql
+ANALYZE;
+```
+
+## Limitations
+
+### Concurrent Access
+
+SQLite databases can have issues with concurrent writes. Since Evidence opens connections in read-only mode, this is generally not a problem for analytics use cases.
+
+### Size Limitations
+
+While SQLite can theoretically handle databases up to 281 TB, practical limits depend on your system. For very large datasets (> 1GB), consider DuckDB or a client-server database.
+
+### No Network Access
+
+SQLite is a file-based database. For remote access, consider:
+- Syncing the database file to your Evidence instance
+- Using a different database system
+- Converting to DuckDB or MotherDuck for cloud access
+
+## Use Cases
+
+### Embedded Analytics
+
+SQLite is perfect for:
+- Bundling data with your Evidence project
+- Local development and testing
+- Small to medium datasets (< 1GB)
+- Offline analytics
+
+### Data Distribution
+
+Distribute your SQLite database with your Evidence project:
+
+```
+your-project/
+  sources/
+    my_connection/
+      connection.yaml
+      data.sqlite
+      queries/
+        *.sql
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="File not found errors">
+    - Verify the `filename` path is relative to your sources directory
+    - Check that the `.sqlite` file exists at the specified location
+    - Ensure the file has read permissions
+  </Accordion>
+  
+  <Accordion title="Database is locked">
+    - Ensure no other processes have the database open for writing
+    - Close any SQLite GUI tools (DB Browser, etc.)
+    - The connector uses read-only mode to minimize locking issues
+  </Accordion>
+  
+  <Accordion title="Date parsing issues">
+    SQLite stores dates as TEXT or INTEGER. Ensure dates are in ISO 8601 format:
+    - `YYYY-MM-DD` for dates
+    - `YYYY-MM-DD HH:MM:SS` for timestamps
+    
+    Convert dates in queries:
+    ```sql
+    SELECT DATE(created_at) FROM users
+    ```
+  </Accordion>
+  
+  <Accordion title="Performance issues with large datasets">
+    - Add indexes to filtered columns
+    - Run ANALYZE to update query planner statistics
+    - Consider migrating to DuckDB for datasets > 1GB
+  </Accordion>
+</AccordionGroup>
+
+## Migrating to DuckDB
+
+For better performance with larger datasets, migrate to DuckDB:
+
+```sql
+-- In DuckDB
+INSTALL sqlite;
+LOAD sqlite;
+
+ATTACH 'data.sqlite' AS sqlite_db (TYPE SQLITE);
+
+CREATE TABLE my_table AS 
+SELECT * FROM sqlite_db.original_table;
+```
+
+Then update your connection configuration to use DuckDB.

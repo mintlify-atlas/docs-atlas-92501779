@@ -1,0 +1,282 @@
+---
+title: "Databricks"
+description: "Connect Evidence to Databricks SQL Warehouses and Clusters"
+---
+
+## Installation
+
+Install the Databricks connector:
+
+```bash
+npm install @evidence-dev/databricks
+```
+
+## Configuration
+
+<CodeGroup>
+```yaml connection.yaml
+name: databricks
+type: databricks
+options:
+  host: ${DATABRICKS_HOST}
+  path: ${DATABRICKS_HTTP_PATH}
+  token: ${DATABRICKS_TOKEN}
+  port: 443
+```
+
+```env .env
+DATABRICKS_HOST=dbc-a1b2c3d4-e5f6.cloud.databricks.com
+DATABRICKS_HTTP_PATH=/sql/1.0/warehouses/abc123def456
+DATABRICKS_TOKEN=dapi1234567890abcdef
+```
+</CodeGroup>
+
+## Configuration Parameters
+
+<ParamField path="host" type="string" required>
+  Databricks workspace hostname (e.g., `dbc-a1b2c3d4-e5f6.cloud.databricks.com`)
+</ParamField>
+
+<ParamField path="path" type="string" required>
+  HTTP path to your SQL Warehouse or cluster (e.g., `/sql/1.0/warehouses/abc123def456`)
+</ParamField>
+
+<ParamField path="token" type="string" required>
+  Personal access token for authentication
+</ParamField>
+
+<ParamField path="port" type="number" default={443}>
+  Connection port (typically 443 for HTTPS)
+</ParamField>
+
+## Getting Connection Details
+
+### SQL Warehouse
+
+1. In Databricks workspace, go to **SQL Warehouses**
+2. Click on your warehouse
+3. Go to **Connection Details** tab
+4. Find:
+   - **Server hostname** → `host`
+   - **HTTP path** → `path`
+5. Create a personal access token in **User Settings → Access Tokens**
+
+### All-Purpose Cluster
+
+1. Go to **Compute** in Databricks workspace
+2. Click on your cluster
+3. Go to **Advanced Options → JDBC/ODBC**
+4. Find the HTTP path
+
+<Tip>
+  SQL Warehouses are recommended for BI and analytics workloads. They provide better cost optimization and auto-scaling.
+</Tip>
+
+## Features
+
+### Type Mapping
+
+Databricks types are mapped to Evidence types:
+
+- **Numbers**: BIGINT, INT, SMALLINT, TINYINT, DECIMAL, FLOAT, DOUBLE
+- **Strings**: STRING, VARCHAR, CHAR, BINARY
+- **Dates**: DATE, TIMESTAMP
+- **Booleans**: BOOLEAN
+
+### Unity Catalog Support
+
+Query tables across catalogs and schemas:
+
+```sql queries/unity_catalog.sql
+SELECT 
+  catalog_name,
+  schema_name,
+  table_name,
+  table_type
+FROM system.information_schema.tables
+WHERE catalog_name = 'main'
+```
+
+### Delta Lake Support
+
+Query Delta tables with time travel:
+
+```sql queries/delta_time_travel.sql
+SELECT * 
+FROM sales.orders VERSION AS OF 100
+```
+
+```sql queries/delta_timestamp.sql
+SELECT *
+FROM sales.orders TIMESTAMP AS OF '2024-01-01 00:00:00'
+```
+
+## Example Queries
+
+### Basic Query
+
+```sql queries/sales_summary.sql
+SELECT 
+  DATE_TRUNC('month', order_date) as month,
+  SUM(amount) as total_revenue,
+  COUNT(*) as order_count,
+  AVG(amount) as avg_order_value
+FROM main.sales.orders
+WHERE order_date >= DATE_SUB(CURRENT_DATE(), 90)
+GROUP BY 1
+ORDER BY 1 DESC
+```
+
+### Cross-Catalog Query
+
+```sql queries/cross_catalog.sql
+SELECT 
+  p.product_name,
+  p.category,
+  s.total_sales
+FROM main.products.catalog p
+JOIN analytics.sales.summary s
+  ON p.product_id = s.product_id
+WHERE s.sale_date >= CURRENT_DATE() - INTERVAL 30 DAYS
+```
+
+### Using Databricks Functions
+
+```sql queries/advanced_analytics.sql
+SELECT 
+  user_id,
+  purchase_date,
+  amount,
+  SUM(amount) OVER (
+    PARTITION BY user_id 
+    ORDER BY purchase_date 
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+  ) as cumulative_spend
+FROM main.sales.purchases
+WHERE purchase_date >= CURRENT_DATE() - INTERVAL 12 MONTHS
+```
+
+## Performance Optimization
+
+### Use Appropriate Warehouse Size
+
+Choose warehouse size based on query complexity:
+- **X-Small/Small**: Simple queries, small datasets
+- **Medium/Large**: Complex joins, aggregations
+- **X-Large/2X-Large**: Heavy analytical workloads
+
+### Enable Auto-Stop
+
+Configure SQL Warehouses to auto-stop after inactivity to save costs.
+
+### Partition Filtering
+
+Filter on partition columns for better performance:
+
+```sql
+SELECT *
+FROM sales.orders
+WHERE date_partition >= '2024-01-01'  -- Partition column
+  AND region = 'US'                   -- Non-partition filter
+```
+
+### Use Delta Table Optimizations
+
+```sql
+-- Enable Delta Lake optimizations
+SET spark.databricks.delta.optimizeWrite.enabled = true;
+SET spark.databricks.delta.autoCompact.enabled = true;
+```
+
+### Limit Result Sets
+
+For exploratory queries, use LIMIT:
+
+```sql
+SELECT *
+FROM large_table
+WHERE condition = true
+LIMIT 10000
+```
+
+## Security Best Practices
+
+### Use Personal Access Tokens
+
+Create tokens with appropriate expiration:
+
+1. User Settings → Access Tokens → Generate New Token
+2. Set a descriptive comment (e.g., "Evidence Analytics")
+3. Set expiration (recommended: 90 days)
+4. Store securely in environment variables
+
+### Rotate Tokens Regularly
+
+Update tokens before expiration to avoid connection failures.
+
+### Use Service Principals
+
+For production deployments, use service principals instead of personal tokens:
+
+```yaml connection.yaml
+name: databricks_prod
+type: databricks
+options:
+  host: ${DATABRICKS_HOST}
+  path: ${DATABRICKS_HTTP_PATH}
+  token: ${DATABRICKS_SP_TOKEN}  # Service principal token
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Authentication errors">
+    - Verify the personal access token is valid and not expired
+    - Ensure the token has permission to access the warehouse/cluster
+    - Check that the token is stored correctly in environment variables
+  </Accordion>
+  
+  <Accordion title="Connection timeout">
+    - Verify the host and HTTP path are correct
+    - Ensure the SQL Warehouse or cluster is running
+    - Check network connectivity and firewall rules
+    - For SQL Warehouses, check if auto-stop is enabled and restart if needed
+  </Accordion>
+  
+  <Accordion title="Table not found errors">
+    - Verify the full table name with catalog and schema: `catalog.schema.table`
+    - Check permissions on the table/schema/catalog
+    - Use `SHOW TABLES IN catalog.schema` to list available tables
+  </Accordion>
+  
+  <Accordion title="Permission denied">
+    Grant appropriate permissions:
+    ```sql
+    GRANT SELECT ON TABLE catalog.schema.table TO user@domain.com;
+    GRANT USE CATALOG catalog TO user@domain.com;
+    GRANT USE SCHEMA catalog.schema TO user@domain.com;
+    ```
+  </Accordion>
+  
+  <Accordion title="Slow query performance">
+    - Check SQL Warehouse size and scale up if needed
+    - Verify tables are optimized (run OPTIMIZE on Delta tables)
+    - Use EXPLAIN to analyze query execution plan
+    - Add partition filters to queries
+    - Consider creating materialized views for frequently accessed aggregations
+  </Accordion>
+</AccordionGroup>
+
+## Unity Catalog Migration
+
+If migrating from Hive metastore to Unity Catalog:
+
+```sql queries/migrate_reference.sql
+-- Old: hive_metastore reference
+SELECT * FROM default.sales
+
+-- New: Unity Catalog reference
+SELECT * FROM main.sales_db.sales
+```
+
+Update your queries to use the three-level namespace: `catalog.schema.table`

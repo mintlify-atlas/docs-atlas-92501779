@@ -1,0 +1,286 @@
+---
+title: Deploy to Vercel
+description: Deploy your Evidence app to Vercel with zero-configuration deployment
+---
+
+Vercel provides seamless deployment for Evidence apps with automatic builds, preview deployments, and global CDN distribution.
+
+## Prerequisites
+
+- An Evidence project in a Git repository (GitHub, GitLab, or Bitbucket)
+- A [Vercel account](https://vercel.com/signup)
+- Your data sources configured and tested locally
+
+## Deployment Steps
+
+<Steps>
+
+### Push Your Project to Git
+
+Ensure your Evidence project is committed to a Git repository:
+
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin <your-repository-url>
+git push -u origin main
+```
+
+### Import to Vercel
+
+1. Log in to [Vercel](https://vercel.com)
+2. Click **Add New** > **Project**
+3. Import your Git repository
+4. Authorize Vercel to access your repositories
+5. Select your Evidence repository
+
+### Configure Project Settings
+
+Vercel will auto-detect your framework. Configure the build settings:
+
+| Setting | Value |
+|---------|-------|
+| **Framework Preset** | Other |
+| **Build Command** | `npm run sources && npm run build` |
+| **Output Directory** | `build` |
+| **Install Command** | `npm install` |
+
+<CodeGroup>
+```json vercel.json
+{
+  "buildCommand": "npm run sources && npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install"
+}
+```
+</CodeGroup>
+
+### Add Environment Variables
+
+If your data sources require credentials:
+
+1. In Vercel, go to **Settings** > **Environment Variables**
+2. Add your variables for all environments (Production, Preview, Development)
+3. Use the `EVIDENCE_` prefix for Evidence-specific variables
+
+Example variables:
+- `EVIDENCE_SOURCE__[datasource]__host`
+- `EVIDENCE_SOURCE__[datasource]__database`
+- `EVIDENCE_SOURCE__[datasource]__user`
+- `EVIDENCE_SOURCE__[datasource]__password`
+
+<Warning>
+Never commit credentials to Git. Always use environment variables for sensitive information.
+</Warning>
+
+### Deploy
+
+Click **Deploy**. Vercel will:
+
+1. Clone your repository
+2. Install dependencies
+3. Run `npm run sources` to query your data
+4. Run `npm run build` to generate the static site
+5. Deploy to Vercel's global CDN
+
+</Steps>
+
+## Configuration Options
+
+### Custom Domain
+
+To add a custom domain:
+
+1. Go to **Settings** > **Domains**
+2. Click **Add**
+3. Enter your domain name
+4. Configure DNS records as instructed
+
+### Build Settings Override
+
+Create a `vercel.json` file in your project root:
+
+<CodeGroup>
+```json vercel.json
+{
+  "buildCommand": "npm run sources && npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install",
+  "framework": null,
+  "env": {
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  }
+}
+```
+</CodeGroup>
+
+### Redirects and Rewrites
+
+Add redirects to your `vercel.json`:
+
+<CodeGroup>
+```json vercel.json
+{
+  "redirects": [
+    {
+      "source": "/old-page",
+      "destination": "/new-page",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    }
+  ]
+}
+```
+</CodeGroup>
+
+### Preview Deployments
+
+Vercel automatically creates preview deployments for:
+
+- Every push to a branch
+- Every pull request
+
+Preview URLs are unique and allow you to test changes before merging to production.
+
+## Continuous Deployment
+
+Vercel automatically deploys your site when you push to your repository:
+
+```bash
+git add .
+git commit -m "Update reports"
+git push
+```
+
+Monitor deployment status in the Vercel dashboard.
+
+## Using Vercel CLI
+
+Deploy directly from your terminal:
+
+<Steps>
+
+### Install Vercel CLI
+
+```bash
+npm install -g vercel
+```
+
+### Deploy
+
+```bash
+# First deployment
+vercel
+
+# Production deployment
+vercel --prod
+```
+
+### Link to Existing Project
+
+```bash
+vercel link
+```
+
+</Steps>
+
+## Troubleshooting
+
+### Build Fails with Memory Error
+
+Increase Node.js memory in `vercel.json`:
+
+```json
+{
+  "env": {
+    "NODE_OPTIONS": "--max-old-space-size=8192"
+  }
+}
+```
+
+Or set it in Vercel's environment variables.
+
+### Build Command Not Found
+
+Ensure your `package.json` includes:
+
+```json
+{
+  "scripts": {
+    "sources": "evidence sources",
+    "build": "evidence build",
+    "dev": "evidence dev"
+  }
+}
+```
+
+### Environment Variables Not Working
+
+1. Verify variables are set for the correct environment (Production/Preview/Development)
+2. Check variable names match exactly (case-sensitive)
+3. Redeploy after adding new environment variables
+4. Review deployment logs for specific errors
+
+### Data Source Connection Timeout
+
+- Ensure your database allows connections from Vercel's IP ranges
+- Increase timeout values in your connection string
+- Consider using a connection pooler for serverless-friendly connections
+
+### Build Exceeds Time Limit
+
+Optimize your build:
+
+- Use `npm run sources -- --changed` to build only modified queries
+- Reduce data volume in source queries
+- Pre-aggregate data in your database
+- Consider upgrading to a Vercel Pro plan for longer build times
+
+## Advanced Configuration
+
+### Monorepo Deployment
+
+For monorepos, specify the root directory:
+
+```json
+{
+  "buildCommand": "cd evidence-app && npm run sources && npm run build",
+  "outputDirectory": "evidence-app/build",
+  "installCommand": "cd evidence-app && npm install"
+}
+```
+
+### SPA Mode
+
+To deploy as a Single Page Application:
+
+```json
+{
+  "env": {
+    "VITE_EVIDENCE_SPA": "true"
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
+```
+
+## Next Steps
+
+- Configure [rendering modes](/deployment/configuration/rendering-modes)
+- Set up [GitHub integration](https://vercel.com/docs/concepts/git/vercel-for-github) for PR comments
+- Enable [deployment protection](https://vercel.com/docs/security/deployment-protection)

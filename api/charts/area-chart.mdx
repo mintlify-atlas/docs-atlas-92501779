@@ -1,0 +1,366 @@
+---
+title: AreaChart
+description: Display data as filled areas, ideal for showing cumulative values and proportions over time
+---
+
+# AreaChart
+
+The `AreaChart` component visualizes data as filled areas, making it ideal for showing cumulative values, trends, and proportions. It supports stacked and 100% stacked layouts with optional line overlays.
+
+## Props
+
+### Data Props
+
+<ParamField path="data" type="Query | array" required>
+  Query result or array of objects containing the data to visualize
+</ParamField>
+
+<ParamField path="x" type="string" required>
+  Column name for the x-axis values
+</ParamField>
+
+<ParamField path="y" type="string" required>
+  Column name for the y-axis values
+</ParamField>
+
+<ParamField path="series" type="string">
+  Column name to group data into multiple series
+</ParamField>
+
+### Area Style Props
+
+<ParamField path="type" type="string" default="stacked">
+  Area layout type: 'stacked' | 'stacked100'
+</ParamField>
+
+<ParamField path="fillColor" type="string">
+  Fill color for the area (hex, rgb, or theme color name)
+</ParamField>
+
+<ParamField path="fillOpacity" type="number">
+  Opacity of the area fill (0-1)
+</ParamField>
+
+<ParamField path="line" type="boolean">
+  Show line at the top edge of the area
+</ParamField>
+
+<ParamField path="lineColor" type="string">
+  Color for the line overlay
+</ParamField>
+
+### Formatting Props
+
+<ParamField path="xFmt" type="string">
+  Format string for x-axis values
+</ParamField>
+
+<ParamField path="yFmt" type="string">
+  Format string for y-axis values
+</ParamField>
+
+### Chart Layout Props
+
+<ParamField path="title" type="string">
+  Chart title displayed at the top
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  Chart subtitle displayed below the title
+</ParamField>
+
+<ParamField path="legend" type="boolean">
+  Whether to show the legend
+</ParamField>
+
+<ParamField path="chartAreaHeight" type="number">
+  Height of the chart area in pixels
+</ParamField>
+
+### Axis Props
+
+<ParamField path="xAxisTitle" type="string | boolean">
+  Title for x-axis. Use `true` to use column name
+</ParamField>
+
+<ParamField path="yAxisTitle" type="string | boolean">
+  Title for y-axis. Use `true` to use column name
+</ParamField>
+
+<ParamField path="xGridlines" type="boolean">
+  Show vertical gridlines
+</ParamField>
+
+<ParamField path="yGridlines" type="boolean">
+  Show horizontal gridlines
+</ParamField>
+
+<ParamField path="xAxisLabels" type="boolean">
+  Show labels on x-axis
+</ParamField>
+
+<ParamField path="yAxisLabels" type="boolean">
+  Show labels on y-axis
+</ParamField>
+
+<ParamField path="xBaseline" type="boolean">
+  Show x-axis baseline
+</ParamField>
+
+<ParamField path="yBaseline" type="boolean">
+  Show y-axis baseline
+</ParamField>
+
+<ParamField path="xTickMarks" type="boolean">
+  Show tick marks on x-axis
+</ParamField>
+
+<ParamField path="yTickMarks" type="boolean">
+  Show tick marks on y-axis
+</ParamField>
+
+### Axis Scale Props
+
+<ParamField path="xType" type="string">
+  Type of x-axis: 'category' | 'time' | 'value'
+</ParamField>
+
+<ParamField path="yLog" type="boolean">
+  Use logarithmic scale for y-axis
+</ParamField>
+
+<ParamField path="yLogBase" type="number">
+  Base for logarithmic y-axis
+</ParamField>
+
+<ParamField path="yMin" type="number">
+  Minimum value for y-axis
+</ParamField>
+
+<ParamField path="yMax" type="number">
+  Maximum value for y-axis
+</ParamField>
+
+<ParamField path="yScale" type="boolean">
+  Auto-scale y-axis to data range
+</ParamField>
+
+### Marker Props
+
+<ParamField path="markers" type="boolean">
+  Show markers at data points
+</ParamField>
+
+<ParamField path="markerShape" type="string">
+  Shape of markers: 'circle' | 'square' | 'triangle' | 'diamond'
+</ParamField>
+
+<ParamField path="markerSize" type="number">
+  Size of markers in pixels
+</ParamField>
+
+### Line Behavior Props
+
+<ParamField path="handleMissing" type="string">
+  How to handle missing data: 'gap' | 'connect' | 'zero'
+</ParamField>
+
+<ParamField path="step" type="boolean">
+  Use step line instead of smooth line
+</ParamField>
+
+<ParamField path="stepPosition" type="string">
+  Position of step: 'start' | 'middle' | 'end'
+</ParamField>
+
+### Label Props
+
+<ParamField path="labels" type="boolean">
+  Show data labels on the area
+</ParamField>
+
+<ParamField path="labelSize" type="number">
+  Font size for labels
+</ParamField>
+
+<ParamField path="labelPosition" type="string">
+  Position of labels: 'top' | 'inside'
+</ParamField>
+
+<ParamField path="labelColor" type="string">
+  Color for labels
+</ParamField>
+
+<ParamField path="labelFmt" type="string">
+  Format string for labels
+</ParamField>
+
+<ParamField path="showAllLabels" type="boolean">
+  Show labels for all data points
+</ParamField>
+
+### Series Props
+
+<ParamField path="colorPalette" type="string | array" default="default">
+  Color palette name or array of colors
+</ParamField>
+
+<ParamField path="seriesColors" type="object">
+  Object mapping series names to colors
+</ParamField>
+
+<ParamField path="seriesOrder" type="array">
+  Array specifying the order of series
+</ParamField>
+
+<ParamField path="seriesLabelFmt" type="string">
+  Format string for series labels
+</ParamField>
+
+### Behavior Props
+
+<ParamField path="sort" type="boolean">
+  Sort data by x-axis values
+</ParamField>
+
+<ParamField path="connectGroup" type="string">
+  Connect charts for synchronized interactions
+</ParamField>
+
+### Advanced Props
+
+<ParamField path="echartsOptions" type="object">
+  Custom ECharts configuration object
+</ParamField>
+
+<ParamField path="seriesOptions" type="object">
+  Custom series configuration
+</ParamField>
+
+<ParamField path="printEchartsConfig" type="boolean" default={false}>
+  Print ECharts config to console
+</ParamField>
+
+<ParamField path="renderer" type="string">
+  Renderer type: 'canvas' | 'svg'
+</ParamField>
+
+<ParamField path="downloadableData" type="boolean">
+  Enable data download
+</ParamField>
+
+<ParamField path="downloadableImage" type="boolean">
+  Enable image download
+</ParamField>
+
+<ParamField path="emptySet" type="string">
+  Empty data behavior: 'pass' | 'warn' | 'error'
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom empty data message
+</ParamField>
+
+<ParamField path="leftPadding" type="number">
+  Left padding for chart area
+</ParamField>
+
+<ParamField path="rightPadding" type="number">
+  Right padding for chart area
+</ParamField>
+
+<ParamField path="xLabelWrap" type="boolean">
+  Wrap x-axis labels
+</ParamField>
+
+## Examples
+
+### Basic Area Chart
+
+```markdown
+```sql revenue_over_time
+select date_trunc('month', order_date) as month, sum(sales) as revenue
+from orders
+group by 1
+order by 1
+```
+
+<AreaChart data={revenue_over_time} x="month" y="revenue" />
+```
+
+### Stacked Area Chart
+
+```markdown
+```sql revenue_by_category
+select 
+  date_trunc('month', order_date) as month,
+  category,
+  sum(sales) as revenue
+from orders
+group by 1, 2
+```
+
+<AreaChart 
+  data={revenue_by_category} 
+  x="month" 
+  y="revenue" 
+  series="category"
+  title="Revenue by Category Over Time"
+  legend="true"
+/>
+```
+
+### 100% Stacked Area Chart
+
+```markdown
+<AreaChart 
+  data={revenue_by_category} 
+  x="month" 
+  y="revenue" 
+  series="category"
+  type="stacked100"
+  title="Revenue Distribution"
+  yFmt="pct"
+/>
+```
+
+### Area Chart with Line Overlay
+
+```markdown
+<AreaChart 
+  data={revenue_over_time} 
+  x="month" 
+  y="revenue"
+  line="true"
+  fillOpacity=0.3
+  yFmt="usd"
+/>
+```
+
+### Custom Colors and Styling
+
+```markdown
+<AreaChart 
+  data={revenue_by_category} 
+  x="month" 
+  y="revenue" 
+  series="category"
+  colorPalette={['#4F46E5', '#7C3AED', '#DB2777']}
+  fillOpacity=0.6
+  markers="true"
+  yGridlines="true"
+/>
+```
+
+### Step Area Chart
+
+```markdown
+<AreaChart 
+  data={inventory_levels} 
+  x="date" 
+  y="quantity"
+  step="true"
+  stepPosition="end"
+  title="Inventory Levels"
+/>
+```

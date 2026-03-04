@@ -1,0 +1,114 @@
+---
+title: "Data Sources Overview"
+description: "Understanding Evidence's Universal SQL architecture and data source connectors"
+---
+
+## Universal SQL Architecture
+
+Evidence uses a **Universal SQL** architecture that allows you to connect to multiple data sources and query them using standard SQL. Each data source connector implements a common interface that:
+
+- Executes SQL queries against your data warehouse or database
+- Streams results efficiently in batches
+- Maps native data types to Evidence's type system (string, number, date, boolean)
+- Handles authentication and connection management
+
+## How Data Sources Work
+
+When you connect a data source to Evidence:
+
+1. **Configuration**: Define connection parameters in your `connection.yaml` file
+2. **Authentication**: Each connector handles authentication (service accounts, tokens, passwords, etc.)
+3. **Query Execution**: SQL files in your project are executed against the connected data source
+4. **Type Mapping**: Native database types are mapped to Evidence types for consistent rendering
+5. **Streaming**: Results are streamed in batches for memory-efficient processing
+
+## Supported Data Sources
+
+Evidence supports a wide range of data warehouses, databases, and file formats:
+
+<CardGroup cols={3}>
+  <Card title="BigQuery" icon="google" href="/data-sources/bigquery">
+    Google Cloud's data warehouse
+  </Card>
+  <Card title="Snowflake" icon="snowflake" href="/data-sources/snowflake">
+    Cloud data platform
+  </Card>
+  <Card title="PostgreSQL" icon="database" href="/data-sources/postgres">
+    Popular open-source database
+  </Card>
+  <Card title="Redshift" icon="aws" href="/data-sources/redshift">
+    Amazon's data warehouse
+  </Card>
+  <Card title="DuckDB" icon="duck" href="/data-sources/duckdb">
+    Embedded analytical database
+  </Card>
+  <Card title="MotherDuck" icon="cloud" href="/data-sources/motherduck">
+    Cloud-native DuckDB
+  </Card>
+  <Card title="MySQL" icon="database" href="/data-sources/mysql">
+    Popular relational database
+  </Card>
+  <Card title="SQL Server" icon="microsoft" href="/data-sources/mssql">
+    Microsoft SQL Server
+  </Card>
+  <Card title="SQLite" icon="database" href="/data-sources/sqlite">
+    Embedded database
+  </Card>
+  <Card title="Databricks" icon="chart-network" href="/data-sources/databricks">
+    Lakehouse platform
+  </Card>
+  <Card title="Trino" icon="server" href="/data-sources/trino">
+    Distributed SQL query engine
+  </Card>
+  <Card title="CSV Files" icon="file-csv" href="/data-sources/csv">
+    CSV and flat files
+  </Card>
+</CardGroup>
+
+## Connection Configuration
+
+All data sources are configured using a `connection.yaml` file in your Evidence project:
+
+```yaml
+name: my_database
+type: postgres
+options:
+  host: localhost
+  port: 5432
+  database: mydb
+  user: username
+  password: ${POSTGRES_PASSWORD}
+```
+
+<Tip>
+  Use environment variables (with `${VAR_NAME}` syntax) to keep sensitive credentials out of your code.
+</Tip>
+
+## Type System
+
+Evidence maps native database types to four core types:
+
+- **string**: Text, JSON, XML, time-only values
+- **number**: Integers, decimals, floats
+- **date**: Dates, timestamps, datetimes
+- **boolean**: True/false values
+
+This consistent type system ensures that components and visualizations work the same way regardless of which data source you're using.
+
+## Performance Considerations
+
+### Batch Size
+
+Connectors stream results in batches (default: 100,000 rows) to balance memory usage and performance. Large result sets are processed incrementally.
+
+### Connection Pooling
+
+Most connectors use connection pooling to efficiently manage database connections and improve query performance.
+
+### Row Count Estimation
+
+When possible, connectors provide expected row counts to help Evidence optimize rendering and pagination.
+
+## Next Steps
+
+Choose your data source from the list above to see specific installation and configuration instructions.

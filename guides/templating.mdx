@@ -1,0 +1,449 @@
+---
+title: Templated Pages
+description: Build dynamic pages that generate automatically from your data
+---
+
+Templated pages let you create dynamic drill-down experiences. Instead of building separate pages for each category, product, or user, create one template that generates pages automatically from your data.
+
+## What Are Templated Pages?
+
+Templated pages use **route parameters** to create dynamic URLs. One template file generates multiple pages based on your data.
+
+For example:
+- `/products/[product_id]/+page.md` generates pages for every product
+- `/customers/[customer_id]/+page.md` generates pages for every customer  
+- `/regions/[region]/[store]/+page.md` creates nested drill-downs
+
+## Basic Templating
+
+<Steps>
+
+<Step title="Create an Index Page">
+
+First, create a page that lists all items you want to drill into:
+
+`pages/categories/+page.md`:
+
+```markdown
+---
+title: Product Categories
+queries:
+  - orders_by_category: orders_by_category.sql
+---
+
+# Product Categories
+
+```sql categories
+SELECT
+  category,
+  '/categories/' || category as category_link,
+  SUM(sales) as total_sales
+FROM ${orders_by_category}
+GROUP BY category
+ORDER BY total_sales DESC
+```
+
+<DataTable data={categories} rows="10">
+  <Column id="category_link" contentType="link" />
+  <Column id="total_sales" fmt="usd0k" />
+</DataTable>
+```
+
+This creates clickable links like `/categories/Electronics`, `/categories/Toys`, etc.
+
+</Step>
+
+<Step title="Create the Template">
+
+Create a template using `[parameter_name]` syntax:
+
+`pages/categories/[category]/+page.md`:
+
+```markdown
+---
+queries:
+  - orders_by_category: orders_by_category.sql
+---
+
+# {$page.params.category}
+
+<DataTable
+  data={orders_by_category.filter(d => d.category?.toLowerCase() === $page.params.category?.toLowerCase())}
+/>
+```
+
+The `{$page.params.category}` variable contains the URL parameter value.
+
+</Step>
+
+<Step title="Add Visualizations">
+
+Enhance the template with charts:
+
+```markdown
+# {$page.params.category}
+
+## Sales Trend
+
+<AreaChart 
+  data={orders_by_category.filter(d => d.category?.toLowerCase() === $page.params.category?.toLowerCase())}
+  x="month"
+  y="total_sales"
+/>
+
+## Monthly Performance
+
+<DataTable
+  data={orders_by_category.filter(d => d.category?.toLowerCase() === $page.params.category?.toLowerCase())}
+/>
+```
+
+</Step>
+
+</Steps>
+
+## Real Example: Multi-Level Drill-Down
+
+Here's a complete example from the Evidence project showing category → item drill-down:
+
+### Level 1: Categories List
+
+`pages/products/+page.md`:
+
+```markdown
+---
+title: Product Catalog
+queries:
+  - orders_by_category: orders_by_category.sql
+---
+
+# Product Catalog
+
+```sql categories
+SELECT
+  category,
+  '/products/' || category as category_link,
+  SUM(sales) as sales
+FROM ${orders_by_category}
+GROUP BY category
+ORDER BY sales DESC
+```
+
+<DataTable data={categories} rows="10">
+  <Column id="category_link" contentType="link" />
+</DataTable>
+```
+
+### Level 2: Category Page
+
+`pages/products/[category]/+page.md`:
+
+```markdown
+---
+queries:
+  - orders_by_category: orders_by_category.sql
+  - item_by_category: item_by_category.sql
+---
+
+# {$page.params.category}
+
+## Sales Trend
+
+<AreaChart 
+  data={orders_by_category.filter(d => d.category?.toLowerCase() === $page.params.category?.toLowerCase())}
+  x="month"
+  y="total_sales"
+/>
+
+## Items in this Category
+
+<DataTable 
+  data={item_by_category.filter(d => d.category?.toLowerCase() === $page.params.category?.toLowerCase())}
+  link="item"
+  rows=10
+>
+  <Column id="item" />
+</DataTable>
+```
+
+The `link=item` prop automatically creates links to `/products/[category]/[item]`.
+
+### Level 3: Item Detail Page
+
+`pages/products/[category]/[item]/+page.md`:
+
+```markdown
+---
+queries:
+  - orders_by_item: orders_by_item.sql
+---
+
+# {$page.params.item}
+
+Category: {$page.params.category}
+
+```sql item_data
+SELECT * 
+FROM ${orders_by_item}
+WHERE item = {$page.params.item}
+ORDER BY month DESC
+```
+
+The most recent monthly sales of {$page.params.item}s was <Value data={item_data} column="sales" row="0" fmt="usd0" />
+
+## Sales History
+
+<LineChart 
+  data={item_data}
+  x="month"
+  y="sales"
+/>
+```
+
+## Advanced Templating
+
+### Using Parameters in Queries
+
+Reference URL parameters directly in SQL:
+
+```sql
+SELECT *
+FROM orders
+WHERE category = {$page.params.category}
+  AND order_date >= CURRENT_DATE - INTERVAL '90 days'
+ORDER BY order_date DESC
+```
+
+### Multiple Parameters
+
+Combine multiple parameters for complex filtering:
+
+```markdown
+# {$page.params.region} - {$page.params.store}
+
+```sql store_metrics
+SELECT *
+FROM store_sales
+WHERE region = {$page.params.region}
+  AND store_id = {$page.params.store}
+```
+
+<BigValue data={store_metrics} value="total_sales" />
+```
+
+### Dynamic Titles
+
+Use parameters to create dynamic page titles:
+
+```markdown
+---
+title: {$page.params.category} Products
+---
+
+# {$page.params.category} Products
+
+Showing all products in the **{$page.params.category}** category.
+```
+
+### Conditional Content
+
+Show different content based on parameters:
+
+```markdown
+{#if $page.params.category === 'Electronics'}
+  ## Special Electronics Analysis
+  
+  <Alert status=infolt;Alert status="info">
+    Electronics require special shipping handling.
+  </Alert>
+{/if}
+```
+
+## Inline Values
+
+Display query values inline with text:
+
+```markdown
+The most recent monthly sales of {$page.params.item}s was {fmt(orders_by_item.filter(d => d.item?.toLowerCase() === $page.params.item?.toLowerCase())[0].sales, "$#,###.00")}
+```
+
+Or use the `<Value>` component:
+
+```markdown
+Total orders: <Value data={item_data} column="num_orders" row=0 />
+```
+
+## Navigation
+
+### Breadcrumbs
+
+Create navigation using parameters:
+
+```markdown
+[All Categories](/products) > [{$page.params.category}](/products/{$page.params.category})
+```
+
+### Related Links
+
+Link to related templated pages:
+
+```markdown
+## Related Categories
+
+```sql related
+SELECT DISTINCT category
+FROM products
+WHERE category != {$page.params.category}
+LIMIT 5
+```
+
+```markdown
+Related categories:
+- [Category 1](/products/category1)
+- [Category 2](/products/category2)
+```
+```
+
+## Best Practices
+
+### URL-Friendly Parameters
+
+Sanitize parameters for URLs:
+
+```sql
+SELECT 
+  product_name,
+  LOWER(REPLACE(product_name, ' ', '-')) as url_slug,
+  '/products/' || LOWER(REPLACE(product_name, ' ', '-')) as product_link
+FROM products
+```
+
+### Case-Insensitive Matching
+
+Always compare parameters case-insensitively:
+
+```markdown
+data={orders.filter(d => d.category?.toLowerCase() === $page.params.category?.toLowerCase())}
+```
+
+### Handle Missing Data
+
+Check if filtered data exists:
+
+```markdown
+{#if item_data.length > 0}
+  <LineChart data={item_data} x="month" y="sales" />
+{:else}
+  <Alert status=warninglt;Alert status="warning">
+    No data available for {$page.params.item}
+  </Alert>
+{/if}
+```
+
+### Performance
+
+For large datasets, filter in SQL instead of JavaScript:
+
+```sql filtered_orders
+SELECT *
+FROM orders
+WHERE category = {$page.params.category}
+```
+
+This is faster than:
+```markdown
+data={all_orders.filter(d => d.category === $page.params.category)}
+```
+
+## Common Patterns
+
+### Customer Dashboard
+
+```markdown
+---
+title: Customer {$page.params.customer_id}
+queries:
+  - customer_orders: customer_orders.sql
+---
+
+```sql customer_metrics
+SELECT 
+  COUNT(*) as total_orders,
+  SUM(order_total) as lifetime_value,
+  MAX(order_date) as last_order_date
+FROM orders
+WHERE customer_id = {$page.params.customer_id}
+```
+
+<BigValue data={customer_metrics} value="lifetime_value" title="Lifetime Value" />
+<BigValue data={customer_metrics} value="total_orders" title="Total Orders" />
+
+## Order History
+
+<DataTable 
+  data={customer_orders.filter(d => d.customer_id === $page.params.customer_id)}
+/>
+```
+
+### Geographic Drill-Down
+
+```markdown
+# {$page.params.country} > {$page.params.state} > {$page.params.city}
+
+```sql city_metrics
+SELECT *
+FROM sales
+WHERE country = {$page.params.country}
+  AND state = {$page.params.state}
+  AND city = {$page.params.city}
+```
+
+<BarChart data={city_metrics} x="month" y="total_sales" />
+```
+
+### Time-Based Templates
+
+```markdown
+---
+title: Monthly Report - {$page.params.month}
+---
+
+# {$page.params.month} Performance
+
+```sql month_data
+SELECT *
+FROM monthly_sales
+WHERE month = {$page.params.month}
+```
+
+<DataTable data={month_data} />
+```
+
+## Troubleshooting
+
+### Parameter Not Found
+
+Ensure your URL structure matches your folder structure:
+- Folder: `pages/products/[category]/`
+- URL: `/products/electronics`
+- Parameter: `$page.params.category` = "electronics"
+
+### Special Characters
+
+URL-encode special characters in links:
+```sql
+'/categories/' || REPLACE(category, ' ', '%20') as link
+```
+
+### Empty Results
+
+Check case sensitivity and use optional chaining:
+```markdown
+d.category?.toLowerCase() === $page.params.category?.toLowerCase()
+```
+
+## Next Steps
+
+- [Customize styling](/guides/styling) - Brand your templated pages
+- [Add interactivity](/components/input-components) - Filters and dropdowns
+- [Deploy your app](/deployment) - Share your templated pages

@@ -1,0 +1,475 @@
+---
+title: Loops and Conditionals
+description: Control page content dynamically with loops and conditional logic
+---
+
+# Loops and Conditionals
+
+Evidence lets you programmatically control what content appears on your pages using loops and conditional statements. This enables dynamic, data-driven reports that adapt to your data.
+
+## Each Loops
+
+Loops let you iterate over query results and create repeating content for each row.
+
+### Basic Loop Syntax
+
+```markdown
+{#each query_name as alias}
+
+{alias.column_name}
+
+{/each}
+```
+
+- `query_name`: The query result to loop over
+- `alias`: A name you choose to reference the current row
+- Access columns with `{alias.column_name}`
+
+### Simple Loop Example
+
+````markdown
+```sql top_products
+SELECT 
+    product_name,
+    sales,
+    units_sold
+FROM products
+ORDER BY sales DESC
+LIMIT 5
+```
+
+## Top 5 Products
+
+{#each top_products as product}
+
+### {product.product_name}
+
+- Sales: <Value data={product} column="sales" fmt="usd"/>
+- Units Sold: <Value data={product} column="units_sold" fmt="num0"/>
+
+{/each}
+````
+
+**Output:**
+
+> ## Top 5 Products
+>
+> ### Laptop
+> - Sales: $45,000
+> - Units Sold: 150
+>
+> ### Monitor  
+> - Sales: $32,000
+> - Units Sold: 320
+>
+> ...
+
+### Loops with Components
+
+Create repeated visualizations:
+
+````markdown
+```sql cities
+SELECT DISTINCT city
+FROM sales
+ORDER BY city
+```
+
+{#each cities as location}
+
+## Sales in {location.city}
+
+```sql city_sales_{location.city}
+SELECT 
+    DATE_TRUNC('month', date) as month,
+    SUM(revenue) as revenue
+FROM sales
+WHERE city = '${location.city}'
+GROUP BY month
+ORDER BY month
+```
+
+<LineChart 
+    data={city_sales_{location.city}}
+    x="month"
+    y="revenue"
+/>
+
+{/each}
+````
+
+<Warning>
+Query names inside loops must be unique. The example above would fail because each iteration creates the same query name. Use templated pages instead for this use case.
+</Warning>
+
+### Better Alternative: Loops for Lists
+
+````markdown
+```sql city_summary
+SELECT 
+    city,
+    SUM(sales) as total_sales,
+    COUNT(*) as order_count
+FROM sales
+GROUP BY city
+ORDER BY total_sales DESC
+```
+
+{#each city_summary as city}
+
+- **{city.city}**: <Value data={city} column="total_sales" fmt="usd"/> from <Value data={city} column="order_count"/> orders
+
+{/each}
+````
+
+### Loops in Components
+
+Generate component children dynamically:
+
+````markdown
+```sql categories
+SELECT DISTINCT category 
+FROM orders
+ORDER BY category
+```
+
+<Accordion>
+{#each categories as cat}
+    <AccordionItem title={cat.category}>
+        Content for the {cat.category} category.
+    </AccordionItem>
+{/each}
+</Accordion>
+````
+
+## Conditionals (If/Else)
+
+Conditionals control what content displays based on data conditions.
+
+### Basic Conditional Syntax
+
+```markdown
+{#if condition}
+
+Content when condition is true
+
+{:else}
+
+Content when condition is false
+
+{/if}
+```
+
+### Simple Conditional Example
+
+````markdown
+```sql sales_target
+SELECT 
+    100000 as target,
+    125000 as actual
+```
+
+{#if sales_target[0].actual >= sales_target[0].target}
+
+## Target Achieved! 🎉
+
+Congratulations! We exceeded our sales target.
+
+{:else}
+
+## Below Target
+
+We need to increase sales to meet our target.
+
+{/if}
+````
+
+### Multiple Conditions
+
+```markdown
+{#if condition_1}
+
+First condition is true
+
+{:else if condition_2}
+
+Second condition is true
+
+{:else}
+
+No conditions are true
+
+{/if}
+```
+
+### Practical Example: Empty State Handling
+
+````markdown
+```sql failed_orders
+SELECT *
+FROM orders
+WHERE status = 'failed'
+```
+
+{#if failed_orders.length > 0}
+
+## Failed Orders
+
+<Warning>
+There are {failed_orders.length} failed orders that need attention.
+</Warning>
+
+<DataTable data={failed_orders} />
+
+{:else}
+
+<Info>
+No failed orders - everything is running smoothly!
+</Info>
+
+{/if}
+````
+
+### Conditional Alerts Based on Thresholds
+
+````markdown
+```sql performance_metrics
+SELECT 
+    0.15 as error_rate,
+    0.05 as warning_threshold,
+    0.10 as critical_threshold
+```
+
+{#if performance_metrics[0].error_rate > performance_metrics[0].critical_threshold}
+
+<Alert status=error>
+Critical: Error rate is at {performance_metrics[0].error_rate}%
+</Alert>
+
+{:else if performance_metrics[0].error_rate > performance_metrics[0].warning_threshold}
+
+<Alert status=warning>
+Warning: Error rate is elevated at {performance_metrics[0].error_rate}%
+</Alert>
+
+{:else}
+
+<Alert status=success>
+System performing normally. Error rate: {performance_metrics[0].error_rate}%
+</Alert>
+
+{/if}
+````
+
+### Conditional Components
+
+````markdown
+```sql metrics
+SELECT 
+    COUNT(*) as total_records
+FROM large_dataset
+```
+
+{#if metrics[0].total_records > 1000}
+
+<Warning>
+Dataset is large. Showing summary statistics instead of full table.
+</Warning>
+
+```sql summary
+SELECT 
+    AVG(value) as avg_value,
+    MAX(value) as max_value,
+    MIN(value) as min_value
+FROM large_dataset
+```
+
+<DataTable data={summary} />
+
+{:else}
+
+<DataTable data={large_dataset} />
+
+{/if}
+````
+
+## Combining Loops and Conditionals
+
+Use loops and conditionals together for complex logic:
+
+````markdown
+```sql team_performance
+SELECT 
+    team_name,
+    sales,
+    quota,
+    (sales::float / quota) as attainment
+FROM teams
+ORDER BY attainment DESC
+```
+
+{#each team_performance as team}
+
+## {team.team_name}
+
+{#if team.attainment >= 1.0}
+
+✅ **Exceeding quota**: <Value data={team} column="attainment" fmt="pct"/> attainment
+
+{:else if team.attainment >= 0.8}
+
+⚠️ **On track**: <Value data={team} column="attainment" fmt="pct"/> attainment
+
+{:else}
+
+❌ **Below target**: <Value data={team} column="attainment" fmt="pct"/> attainment
+
+{/if}
+
+---
+
+{/each}
+````
+
+## Conditional Table Columns
+
+Show different columns based on user input:
+
+````markdown
+```sql summary
+SELECT 
+    category,
+    SUM(sales) as sales,
+    COUNT(*) as orders,
+    AVG(sales) as avg_order_value
+FROM orders
+GROUP BY category
+```
+
+<Dropdown name=metric>
+    <DropdownOption value="sales">Sales</DropdownOption>
+    <DropdownOption value="orders">Orders</DropdownOption>
+    <DropdownOption value="aov">Avg Order Value</DropdownOption>
+</Dropdown>
+
+<DataTable data={summary}>
+    <Column id="category" />
+    {#if inputs.metric.value === 'sales'}
+        <Column id="sales" fmt="usd0k" />
+    {:else if inputs.metric.value === 'orders'}
+        <Column id="orders" fmt="num0" />
+    {:else}
+        <Column id="avg_order_value" fmt="usd2" />
+    {/if}
+</DataTable>
+````
+
+## Common Conditional Patterns
+
+### Check Query Length
+
+```markdown
+{#if query_name.length === 0}
+    No data available
+{:else}
+    <DataTable data={query_name} />
+{/if}
+```
+
+### Compare Values
+
+```markdown
+{#if current_value > previous_value}
+    📈 Trending up
+{:else}
+    📉 Trending down
+{/if}
+```
+
+### Check for Null/Undefined
+
+```markdown
+{#if data[0]?.value}
+    <Value data={data} column="value" />
+{:else}
+    No value available
+{/if}
+```
+
+### Date Comparisons
+
+```markdown
+{#if new Date(last_update[0].date) < new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)}
+    ⚠️ Data is more than a week old
+{/if}
+```
+
+## JavaScript Expressions
+
+Evidence supports JavaScript expressions inside `{ }`:
+
+```markdown
+{2 + 2}
+<!-- Output: 4 -->
+
+{orders.length} orders
+<!-- Output: 42 orders -->
+
+{(revenue[0].total / 1000).toFixed(1)}k
+<!-- Output: 125.5k -->
+
+{new Date().toLocaleDateString()}
+<!-- Output: 3/4/2026 -->
+```
+
+## When to Use Loops vs. Templated Pages
+
+**Use Loops when:**
+- Creating a list or small number of repeated sections on one page
+- You don't need unique URLs for each item
+- Content is simple (headings, values, small charts)
+
+**Use [Templated Pages](/core-concepts/templated-pages) when:**
+- Each item deserves its own page with a unique URL
+- You have many items (>20)
+- Each item has substantial content
+- You want shareable links to individual items
+
+<Tip>
+For large datasets, prefer DataTables with search/filter instead of loops to maintain performance.
+</Tip>
+
+## Performance Considerations
+
+<Warning>
+Loops execute on every row. For large datasets (1000+ rows), avoid:
+- Creating charts in loops
+- Running queries inside loops  
+- Complex calculations per row
+
+Instead, use DataTables or pre-aggregate data in SQL.
+</Warning>
+
+## Debugging Tips
+
+### View Query Data
+
+Inspect what data is available:
+
+```markdown
+{JSON.stringify(query_name, null, 2)}
+```
+
+### Check Array Length
+
+```markdown
+Query returned {query_name.length} rows
+```
+
+### Conditional Debugging
+
+```markdown
+{#if query_name.length === 0}
+    ⚠️ Debug: Query returned no results
+{/if}
+```

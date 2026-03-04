@@ -1,0 +1,238 @@
+---
+title: SankeyDiagram
+description: Visualize flow and transitions between nodes using directed weighted links
+---
+
+# SankeyDiagram
+
+The `SankeyDiagram` component visualizes flows between nodes, making it ideal for showing how quantities move through different stages or categories. Common use cases include sales funnels, user flows, and resource allocation.
+
+## Props
+
+### Data Props
+
+<ParamField path="data" type="Query | array" required>
+  Query result or array of objects containing the flow data
+</ParamField>
+
+<ParamField path="sourceCol" type="string" default="source">
+  Column name containing source node names
+</ParamField>
+
+<ParamField path="targetCol" type="string" default="target">
+  Column name containing target node names
+</ParamField>
+
+<ParamField path="valueCol" type="string" default="value">
+  Column name containing flow values
+</ParamField>
+
+<ParamField path="percentCol" type="string">
+  Column name containing percentage values for links
+</ParamField>
+
+### Formatting Props
+
+<ParamField path="valueFmt" type="string">
+  Format string for value labels
+</ParamField>
+
+<ParamField path="percentFmt" type="string">
+  Format string for percentage labels
+</ParamField>
+
+### Chart Layout Props
+
+<ParamField path="title" type="string">
+  Chart title displayed at the top
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  Chart subtitle displayed below the title
+</ParamField>
+
+<ParamField path="chartAreaHeight" type="number" default={300}>
+  Height of the chart area in pixels
+</ParamField>
+
+### Node Props
+
+<ParamField path="nodeLabels" type="string" default="name">
+  Node label display: 'name' | 'value' | 'full'
+  - 'name': Show node name only
+  - 'value': Show value only
+  - 'full': Show both name and value
+</ParamField>
+
+<ParamField path="nodeAlign" type="string" default="justify">
+  Node alignment: 'justify' | 'left' | 'right'
+</ParamField>
+
+<ParamField path="nodeGap" type="number" default={10}>
+  Vertical gap between nodes in pixels
+</ParamField>
+
+<ParamField path="nodeWidth" type="number" default={20}>
+  Width of nodes in pixels
+</ParamField>
+
+<ParamField path="outlineColor" type="string">
+  Color for node outlines
+</ParamField>
+
+<ParamField path="outlineWidth" type="number">
+  Width of node outlines in pixels
+</ParamField>
+
+<ParamField path="depthOverride" type="object">
+  Object mapping node names to depth levels (0-based): `{'nodeName': 1}`
+</ParamField>
+
+### Link Props
+
+<ParamField path="linkLabels" type="string">
+  Link label display: 'value' | 'percent' | 'full' | undefined
+  - 'value': Show flow value
+  - 'percent': Show percentage
+  - 'full': Show both
+  - undefined: No labels (default)
+</ParamField>
+
+<ParamField path="linkColor" type="string" default="base-content-muted">
+  Link color mode: 'base-content-muted' | 'source' | 'target' | 'gradient'
+</ParamField>
+
+### Layout Props
+
+<ParamField path="orient" type="string" default="horizontal">
+  Diagram orientation: 'horizontal' | 'vertical'
+</ParamField>
+
+<ParamField path="sort" type="boolean" default={false}>
+  Sort nodes automatically
+</ParamField>
+
+### Color Props
+
+<ParamField path="colorPalette" type="string | array" default="default">
+  Color palette name or array of colors for nodes
+</ParamField>
+
+### Advanced Props
+
+<ParamField path="echartsOptions" type="object">
+  Custom ECharts configuration object
+</ParamField>
+
+<ParamField path="printEchartsConfig" type="boolean" default={false}>
+  Print ECharts config to console
+</ParamField>
+
+<ParamField path="emptySet" type="string">
+  Empty data behavior: 'pass' | 'warn' | 'error'
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom empty data message
+</ParamField>
+
+## Examples
+
+### Basic Sankey Diagram
+
+```markdown
+```sql user_flow
+select 
+  'Homepage' as source, 'Product Page' as target, 1000 as value
+union all
+select 'Homepage', 'Checkout', 200
+union all
+select 'Product Page', 'Checkout', 800
+union all
+select 'Checkout', 'Purchase', 600
+```
+
+<SankeyDiagram data={user_flow} />
+```
+
+### Sankey with Custom Column Names
+
+```markdown
+```sql sales_funnel
+select 
+  stage as from_stage,
+  next_stage as to_stage,
+  customer_count as count
+from funnel_data
+```
+
+<SankeyDiagram 
+  data={sales_funnel} 
+  sourceCol="from_stage"
+  targetCol="to_stage"
+  valueCol="count"
+  title="Sales Funnel Flow"
+/>
+```
+
+### Sankey with Percentages
+
+```markdown
+```sql funnel_with_pct
+select 
+  source,
+  target,
+  users as value,
+  conversion_rate as percent
+from funnel_metrics
+```
+
+<SankeyDiagram 
+  data={funnel_with_pct} 
+  linkLabels="full"
+  nodeLabels="full"
+  valueFmt="#,##0"
+  percentFmt="pct1"
+/>
+```
+
+### Vertical Sankey
+
+```markdown
+<SankeyDiagram 
+  data={user_flow} 
+  orient="vertical"
+  title="User Journey"
+  nodeWidth=30
+  nodeGap=15
+/>
+```
+
+### Customized Styling
+
+```markdown
+<SankeyDiagram 
+  data={user_flow} 
+  linkColor="gradient"
+  colorPalette={['#4F46E5', '#7C3AED', '#DB2777', '#F59E0B']}
+  nodeLabels="full"
+  linkLabels="value"
+  valueFmt="#,##0"
+  chartAreaHeight=400
+/>
+```
+
+### With Depth Override
+
+```markdown
+<SankeyDiagram 
+  data={user_flow}
+  depthOverride={{
+    'Homepage': 0,
+    'Product Page': 1,
+    'Checkout': 2,
+    'Purchase': 3
+  }}
+  title="Controlled Flow Layout"
+/>
+```

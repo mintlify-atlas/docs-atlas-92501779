@@ -1,0 +1,238 @@
+---
+title: "MotherDuck"
+description: "Connect Evidence to MotherDuck (Cloud DuckDB)"
+---
+
+## Installation
+
+Install the MotherDuck connector:
+
+```bash
+npm install @evidence-dev/motherduck
+```
+
+## Configuration
+
+<CodeGroup>
+```yaml connection.yaml
+name: motherduck
+type: motherduck
+options:
+  token: ${MOTHERDUCK_TOKEN}
+  database: my_database
+```
+
+```env .env
+MOTHERDUCK_TOKEN=your_motherduck_token_here
+```
+</CodeGroup>
+
+## Configuration Parameters
+
+<ParamField path="token" type="string" required>
+  MotherDuck API token (service token or personal access token)
+</ParamField>
+
+<ParamField path="database" type="string">
+  Specific database to connect to. If not specified, connects to your default database
+</ParamField>
+
+## Getting a MotherDuck Token
+
+1. Sign up at [motherduck.com](https://motherduck.com)
+2. Navigate to Settings → Access Tokens
+3. Create a new service token or personal access token
+4. Copy the token and add it to your `.env` file
+
+<Warning>
+  Keep your MotherDuck token secure. Never commit tokens to version control.
+</Warning>
+
+## Features
+
+MotherDuck uses the DuckDB connector under the hood, providing access to all DuckDB functionality plus cloud features.
+
+### Type Mapping
+
+Same as DuckDB:
+
+- **Numbers**: TINYINT, SMALLINT, INTEGER, BIGINT, HUGEINT, FLOAT, DOUBLE, DECIMAL
+- **Strings**: VARCHAR, STRING, TEXT, TIME
+- **Dates**: DATE, TIMESTAMP, TIMESTAMP WITH TIME ZONE
+- **Booleans**: BOOLEAN
+
+### Cloud Storage Integration
+
+MotherDuck can read from cloud storage with automatic credential management:
+
+```sql queries/s3_data.sql
+SELECT *
+FROM read_parquet('s3://my-bucket/data/*.parquet')
+WHERE event_date >= CURRENT_DATE - INTERVAL 7 DAYS
+```
+
+### Hybrid Execution
+
+MotherDuck automatically decides whether to execute queries in the cloud or locally for optimal performance.
+
+### Sharing and Collaboration
+
+Share databases across your organization:
+
+```sql queries/shared_data.sql
+-- Access shared databases
+SELECT * FROM shared_db.analytics.sales
+WHERE region = 'US'
+```
+
+## Example Queries
+
+### Query Cloud Data
+
+```sql queries/cloud_analytics.sql
+SELECT 
+  DATE_TRUNC('day', timestamp) as date,
+  COUNT(*) as events,
+  COUNT(DISTINCT user_id) as unique_users
+FROM events
+WHERE timestamp >= CURRENT_DATE - INTERVAL 30 DAYS
+GROUP BY 1
+ORDER BY 1 DESC
+```
+
+### Combine Local and Cloud Data
+
+```sql queries/hybrid_query.sql
+-- Attach a local DuckDB file
+ATTACH 'local_data.duckdb' AS local;
+
+-- Join cloud and local data
+SELECT 
+  c.customer_name,
+  c.segment,
+  SUM(o.amount) as total_spent
+FROM customers c
+JOIN local.orders o
+  ON c.customer_id = o.customer_id
+GROUP BY 1, 2
+```
+
+### Use DuckDB Extensions
+
+```sql queries/with_extensions.sql
+INSTALL spatial;
+LOAD spatial;
+
+SELECT 
+  city,
+  ST_AsText(location) as coordinates,
+  COUNT(*) as store_count
+FROM stores
+GROUP BY 1, 2
+```
+
+## Database Management
+
+### Create a Database
+
+```sql
+CREATE DATABASE my_new_database;
+```
+
+### List Databases
+
+```sql
+SHOW DATABASES;
+```
+
+### Switch Database
+
+Specify the database in your connection configuration or use:
+
+```sql
+USE my_database;
+```
+
+## Performance Optimization
+
+### Partitioned Data
+
+Organize cloud data by partitions:
+
+```sql
+SELECT *
+FROM read_parquet('s3://bucket/data/year=*/month=*/*.parquet')
+WHERE year = 2024 AND month >= 6
+```
+
+### Materialized Views
+
+Create materialized views for frequently accessed aggregations:
+
+```sql
+CREATE MATERIALIZED VIEW daily_summary AS
+SELECT 
+  DATE_TRUNC('day', timestamp) as date,
+  product_id,
+  SUM(revenue) as total_revenue
+FROM sales
+GROUP BY 1, 2;
+```
+
+### Result Caching
+
+MotherDuck automatically caches query results for faster repeated queries.
+
+## Version Compatibility
+
+<Note>
+  MotherDuck connections require MotherDuck version **0.10.0 or later**. If you experience connection issues, verify your MotherDuck instance version.
+</Note>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection timeout">
+    MotherDuck connections may take a few seconds on first connect while the cloud instance warms up. Subsequent connections should be faster.
+    
+    If connections consistently timeout:
+    - Verify your MotherDuck token is valid
+    - Check your internet connection
+    - Ensure you're using MotherDuck >= 0.10.0
+  </Accordion>
+  
+  <Accordion title="Invalid token errors">
+    - Verify the token is copied correctly (no extra spaces)
+    - Ensure the token hasn't expired
+    - Create a new service token if needed
+  </Accordion>
+  
+  <Accordion title="Database not found">
+    - Check the database name is spelled correctly
+    - Verify you have access to the database
+    - Try connecting without specifying a database to see available databases
+  </Accordion>
+  
+  <Accordion title="Slow query performance">
+    - Check if data can be partitioned for faster filtering
+    - Consider creating materialized views for complex aggregations
+    - Use columnar formats (Parquet) instead of CSV for better performance
+  </Accordion>
+</AccordionGroup>
+
+## Migrating from Local DuckDB
+
+To migrate from local DuckDB to MotherDuck:
+
+1. Export your local data:
+   ```sql
+   COPY (SELECT * FROM my_table) TO 's3://my-bucket/my_table.parquet';
+   ```
+
+2. Update your connection configuration to use MotherDuck
+
+3. Import data in MotherDuck:
+   ```sql
+   CREATE TABLE my_table AS
+   SELECT * FROM read_parquet('s3://my-bucket/my_table.parquet');
+   ```

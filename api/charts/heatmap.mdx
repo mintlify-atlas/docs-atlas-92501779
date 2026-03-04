@@ -1,0 +1,290 @@
+---
+title: Heatmap
+description: Display matrix data using color intensity to represent values
+---
+
+# Heatmap
+
+The `Heatmap` component visualizes matrix data using color intensity, making it ideal for showing patterns, correlations, and distributions across two categorical dimensions.
+
+## Props
+
+### Data Props
+
+<ParamField path="data" type="Query | array" required>
+  Query result or array of objects containing the data to visualize
+</ParamField>
+
+<ParamField path="x" type="string" required>
+  Column name for x-axis categories
+</ParamField>
+
+<ParamField path="y" type="string" required>
+  Column name for y-axis categories
+</ParamField>
+
+<ParamField path="value" type="string" required>
+  Column name containing the numeric values to visualize as colors
+</ParamField>
+
+### Sorting Props
+
+<ParamField path="xSort" type="string">
+  Column to sort x-axis by
+</ParamField>
+
+<ParamField path="xSortOrder" type="string" default="asc">
+  Sort order for x-axis: 'asc' | 'desc'
+</ParamField>
+
+<ParamField path="ySort" type="string">
+  Column to sort y-axis by
+</ParamField>
+
+<ParamField path="ySortOrder" type="string" default="asc">
+  Sort order for y-axis: 'asc' | 'desc'
+</ParamField>
+
+### Formatting Props
+
+<ParamField path="valueFmt" type="string">
+  Format string for cell values
+</ParamField>
+
+### Label Props
+
+<ParamField path="valueLabels" type="boolean" default={true}>
+  Show value labels in cells
+</ParamField>
+
+<ParamField path="mobileValueLabels" type="boolean" default={false}>
+  Show value labels on mobile devices
+</ParamField>
+
+### Chart Layout Props
+
+<ParamField path="title" type="string">
+  Chart title displayed at the top
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  Chart subtitle displayed below the title
+</ParamField>
+
+<ParamField path="chartAreaHeight" type="number">
+  Height of the chart area in pixels
+</ParamField>
+
+<ParamField path="cellHeight" type="number" default={30}>
+  Height of each cell in pixels
+</ParamField>
+
+### Axis Props
+
+<ParamField path="xAxisPosition" type="string" default="top">
+  Position of x-axis: 'top' | 'bottom'
+</ParamField>
+
+<ParamField path="xTickMarks" type="boolean" default={false}>
+  Show tick marks on x-axis
+</ParamField>
+
+<ParamField path="yTickMarks" type="boolean" default={false}>
+  Show tick marks on y-axis
+</ParamField>
+
+<ParamField path="xLabelRotation" type="number">
+  Rotation angle for x-axis labels in degrees
+</ParamField>
+
+### Visual Props
+
+<ParamField path="borders" type="boolean" default={true}>
+  Show borders around cells
+</ParamField>
+
+<ParamField path="legend" type="boolean" default={true}>
+  Show color legend
+</ParamField>
+
+<ParamField path="filter" type="boolean" default={false}>
+  Enable interactive filtering via the legend
+</ParamField>
+
+### Color Props
+
+<ParamField path="colorScale" type="string">
+  Color scale name for the heatmap gradient
+</ParamField>
+
+<ParamField path="colorPalette" type="string">
+  Deprecated: Use `colorScale` instead
+</ParamField>
+
+<ParamField path="min" type="number">
+  Minimum value for color scale
+</ParamField>
+
+<ParamField path="max" type="number">
+  Maximum value for color scale
+</ParamField>
+
+### Data Handling Props
+
+<ParamField path="nullsZero" type="boolean" default={true}>
+  Treat null/missing values as zero
+</ParamField>
+
+<ParamField path="zeroDisplay" type="string" default="—">
+  Text to display for zero values
+</ParamField>
+
+### Advanced Props
+
+<ParamField path="echartsOptions" type="object">
+  Custom ECharts configuration object
+</ParamField>
+
+<ParamField path="seriesOptions" type="object">
+  Custom series configuration
+</ParamField>
+
+<ParamField path="printEchartsConfig" type="boolean" default={false}>
+  Print ECharts config to console
+</ParamField>
+
+<ParamField path="renderer" type="string">
+  Renderer type: 'canvas' | 'svg'
+</ParamField>
+
+<ParamField path="downloadableData" type="boolean" default={true}>
+  Enable data download
+</ParamField>
+
+<ParamField path="downloadableImage" type="boolean" default={true}>
+  Enable image download
+</ParamField>
+
+<ParamField path="connectGroup" type="string">
+  Connect charts for synchronized interactions
+</ParamField>
+
+<ParamField path="emptySet" type="string">
+  Empty data behavior: 'pass' | 'warn' | 'error'
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom empty data message
+</ParamField>
+
+<ParamField path="leftPadding" type="number" default={0}>
+  Left padding for chart area
+</ParamField>
+
+<ParamField path="rightPadding" type="number" default={2}>
+  Right padding for chart area
+</ParamField>
+
+## Examples
+
+### Basic Heatmap
+
+```markdown
+```sql sales_by_day_hour
+select 
+  day_of_week,
+  hour_of_day,
+  sum(sales) as total_sales
+from orders
+group by 1, 2
+```
+
+<Heatmap 
+  data={sales_by_day_hour} 
+  x="hour_of_day" 
+  y="day_of_week" 
+  value="total_sales" 
+/>
+```
+
+### Heatmap with Custom Colors
+
+```markdown
+<Heatmap 
+  data={sales_by_day_hour} 
+  x="hour_of_day" 
+  y="day_of_week" 
+  value="total_sales"
+  title="Sales Heatmap by Day and Hour"
+  colorScale="reds"
+  valueFmt="usd0k"
+/>
+```
+
+### Sorted Heatmap
+
+```markdown
+```sql correlation_matrix
+select 
+  metric_1,
+  metric_2,
+  correlation
+from correlations
+```
+
+<Heatmap 
+  data={correlation_matrix} 
+  x="metric_1" 
+  y="metric_2" 
+  value="correlation"
+  xSort="metric_1"
+  ySort="metric_2"
+  title="Correlation Matrix"
+  valueFmt="pct1"
+/>
+```
+
+### Heatmap without Labels
+
+```markdown
+<Heatmap 
+  data={sales_by_day_hour} 
+  x="hour_of_day" 
+  y="day_of_week" 
+  value="total_sales"
+  valueLabels="false"
+  legend="true"
+  filter="true"
+/>
+```
+
+### Custom Size and Styling
+
+```markdown
+<Heatmap 
+  data={sales_by_day_hour} 
+  x="hour_of_day" 
+  y="day_of_week" 
+  value="total_sales"
+  cellHeight=40
+  borders="true"
+  title="Hourly Sales Pattern"
+  valueFmt="usd0"
+  min=0
+  max=10000
+/>
+```
+
+### Rotated Labels
+
+```markdown
+<Heatmap 
+  data={product_category_sales} 
+  x="product_name" 
+  y="category" 
+  value="sales"
+  xLabelRotation=45
+  xAxisPosition="bottom"
+  title="Product Sales by Category"
+/>
+```

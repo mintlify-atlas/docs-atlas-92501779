@@ -1,0 +1,208 @@
+---
+title: Data Sources
+description: Connect to databases and data sources to query data in Evidence
+---
+
+# Data Sources
+
+Evidence connects to databases and extracts data into a common storage format (Parquet) to enable querying across multiple data sources using SQL.
+
+## How Data Sources Work
+
+Evidence uses a Universal SQL architecture that:
+
+1. Extracts data from your source databases into Parquet files
+2. Enables querying across multiple data sources using DuckDB SQL dialect
+3. Stores extracted data locally for fast query performance
+
+<Info>
+This architecture allows you to query data from PostgreSQL, Snowflake, BigQuery, and other sources in a single SQL query.
+</Info>
+
+## Connecting a Data Source
+
+To connect your development environment to a database:
+
+### Using the Settings UI
+
+1. Start your Evidence app:
+   ```bash
+   npm run dev
+   ```
+
+2. Navigate to [localhost:3000/settings](http://localhost:3000/settings)
+
+3. Select your data source type, name it, and enter required credentials
+
+4. Test the connection to verify it works
+
+<Note>
+Evidence saves your credentials locally in your development environment. Production credentials are managed via environment variables.
+</Note>
+
+### Supported Data Sources
+
+Evidence supports a wide range of data sources:
+
+**SQL Databases:**
+- BigQuery
+- Snowflake
+- Redshift
+- PostgreSQL / Timescale
+- Microsoft SQL Server
+- MySQL
+- SQLite
+- DuckDB
+- MotherDuck
+- Databricks
+- Trino
+- Cube
+
+**File-Based Sources:**
+- CSV files
+- Google Sheets
+
+**Custom Sources:**
+- JavaScript data sources
+- API connectors via plugins
+
+## Configuring Source Queries
+
+For SQL data sources, you define which data to extract by adding `.sql` files to the `/sources/[source_name]/` directory.
+
+```
+.-- sources/
+   `-- my_database/
+      |-- connection.yaml
+      |-- customers.sql
+      `-- orders.sql
+```
+
+<Warning>
+Source queries use your data source's **native SQL dialect** (e.g., BigQuery SQL, Snowflake SQL), not DuckDB SQL.
+</Warning>
+
+### Example Source Query
+
+Create a file `sources/my_database/orders.sql`:
+
+```sql
+SELECT 
+    order_id,
+    customer_id,
+    order_date,
+    total_amount,
+    status
+FROM orders
+WHERE order_date >= CURRENT_DATE - INTERVAL '90 days'
+```
+
+This creates a table accessible in your Evidence pages as `my_database.orders`.
+
+## Running Sources
+
+Extract data from your configured sources:
+
+```bash
+npm run sources
+```
+
+<Tip>
+With the dev server running, sources automatically re-run when you change source queries.
+</Tip>
+
+### Running Specific Sources
+
+For large data sources, you can run only what you need:
+
+```bash
+# Run only changed sources
+npm run sources -- --changed
+
+# Run a specific source
+npm run sources -- --sources my_database
+
+# Run specific queries from a source
+npm run sources -- --sources my_database --queries orders,customers
+```
+
+## Using Extracted Data
+
+Once extracted, query your data in Evidence pages using the DuckDB SQL dialect:
+
+````markdown
+```sql recent_orders
+SELECT 
+    order_date,
+    COUNT(*) as order_count,
+    SUM(total_amount) as total_sales
+FROM my_database.orders
+GROUP BY order_date
+ORDER BY order_date DESC
+```
+
+<LineChart 
+    data={recent_orders}
+    x="order_date"
+    y="total_sales"
+/>
+````
+
+## Build-Time Variables
+
+You can parameterize source queries using environment variables with the `EVIDENCE_VAR__` prefix.
+
+`.env`
+```bash
+EVIDENCE_VAR__min_date=2024-01-01
+EVIDENCE_VAR__region=us-west
+```
+
+In your source query:
+```sql
+SELECT *
+FROM sales
+WHERE date >= '${min_date}'
+  AND region = '${region}'
+```
+
+<Note>
+Build-time variables are only available in **source queries**, not in page queries or markdown files.
+</Note>
+
+## Working with Large Data
+
+If you encounter memory errors when running sources:
+
+```bash
+FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+```
+
+Increase the memory allocation:
+
+**macOS / Linux:**
+```bash
+NODE_OPTIONS="--max-old-space-size=4096" npm run sources
+```
+
+**Windows:**
+```bash
+set NODE_OPTIONS=--max-old-space-size=4096 && npm run sources
+```
+
+## Production Deployment
+
+In production, credentials are managed via environment variables. Each data source has specific environment variables for credentials.
+
+<Info>
+See the [deployment configuration](/deployment/configuration) documentation for details on setting up production credentials.
+</Info>
+
+## Need Help?
+
+If you need a data source that isn't currently supported:
+
+- [Create a GitHub issue](https://github.com/evidence-dev/evidence/issues)
+- [Join the Evidence Slack community](https://slack.evidence.dev)
+
+The source code for Evidence's connectors is available on [GitHub](https://github.com/evidence-dev/evidence/tree/main/packages/datasources).

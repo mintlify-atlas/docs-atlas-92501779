@@ -1,0 +1,371 @@
+---
+title: Docker Deployment
+description: Deploy your Evidence app using Docker containers
+---
+
+Deploy Evidence apps using Docker for consistent, containerized deployments across any infrastructure.
+
+## Overview
+
+Docker deployment allows you to:
+- Package your Evidence app with all dependencies
+- Deploy to any Docker-compatible platform
+- Ensure consistent builds across environments
+- Scale horizontally with container orchestration
+
+## Creating a Dockerfile
+
+Create a `Dockerfile` in your Evidence project root:
+
+<CodeGroup>
+```dockerfile Dockerfile
+# Build stage
+FROM node:18-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy project files
+COPY . .
+
+# Build data sources
+RUN npm run sources
+
+# Build the app
+RUN npm run build
+
+# Production stage
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install serve to host static files
+RUN npm install -g serve
+
+# Copy built files from builder
+COPY --from=builder /app/build ./build
+
+# Expose port
+EXPOSE 3000
+
+# Start the server
+CMD ["serve", "-s", "build", "-l", "3000"]
+```
+
+```dockerfile Dockerfile (with Nginx)
+# Build stage
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run sources
+RUN npm run build
+
+# Production stage with Nginx
+FROM nginx:alpine
+
+# Copy built files
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# Copy nginx config (optional)
+# COPY nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+</CodeGroup>
+
+## Docker Ignore File
+
+Create a `.dockerignore` file to exclude unnecessary files:
+
+<CodeGroup>
+```text .dockerignore
+node_modules
+.git
+.github
+.vscode
+.evidence
+build
+npm-debug.log
+.env
+.env.local
+.DS_Store
+*.md
+!README.md
+```
+</CodeGroup>
+
+## Building the Docker Image
+
+<Steps>
+
+### Build the Image
+
+```bash
+docker build -t evidence-app:latest .
+```
+
+### Run the Container Locally
+
+```bash
+docker run -p 3000:3000 evidence-app:latest
+```
+
+Access your app at `http://localhost:3000`
+
+### Build with Environment Variables
+
+Pass environment variables during build:
+
+```bash
+docker build \
+  --build-arg EVIDENCE_SOURCE__mydb__host=db.example.com \
+  --build-arg EVIDENCE_SOURCE__mydb__database=mydb \
+  -t evidence-app:latest .
+```
+
+</Steps>
+
+## Docker Compose
+
+For more complex setups with databases, use Docker Compose:
+
+<CodeGroup>
+```yaml docker-compose.yml
+version: '3.8'
+
+services:
+  evidence:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - EVIDENCE_SOURCE__postgres__host=postgres
+      - EVIDENCE_SOURCE__postgres__port=5432
+      - EVIDENCE_SOURCE__postgres__database=mydb
+      - EVIDENCE_SOURCE__postgres__user=user
+      - EVIDENCE_SOURCE__postgres__password=password
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=mydb
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+</CodeGroup>
+
+Run with Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+## Environment Variables
+
+### Build-Time Variables
+
+Pass secrets during the build phase:
+
+<CodeGroup>
+```dockerfile Dockerfile
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Declare build arguments
+ARG EVIDENCE_SOURCE__mydb__host
+ARG EVIDENCE_SOURCE__mydb__password
+
+# Set as environment variables
+ENV EVIDENCE_SOURCE__mydb__host=$EVIDENCE_SOURCE__mydb__host
+ENV EVIDENCE_SOURCE__mydb__password=$EVIDENCE_SOURCE__mydb__password
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run sources
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+</CodeGroup>
+
+### Using .env Files
+
+```bash
+docker run --env-file .env.production -p 3000:3000 evidence-app:latest
+```
+
+## Deployment Platforms
+
+### AWS ECS
+
+1. Push image to ECR:
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-east-1.amazonaws.com
+docker tag evidence-app:latest <account-id>.dkr.ecr.us-east-1.amazonaws.com/evidence-app:latest
+docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/evidence-app:latest
+```
+
+2. Create ECS task definition and service
+
+### Google Cloud Run
+
+```bash
+# Build and push to Google Container Registry
+gcloud builds submit --tag gcr.io/PROJECT_ID/evidence-app
+
+# Deploy to Cloud Run
+gcloud run deploy evidence-app \
+  --image gcr.io/PROJECT_ID/evidence-app \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated
+```
+
+### Azure Container Instances
+
+```bash
+# Push to Azure Container Registry
+az acr build --registry myregistry --image evidence-app:latest .
+
+# Create container instance
+az container create \
+  --resource-group myResourceGroup \
+  --name evidence-app \
+  --image myregistry.azurecr.io/evidence-app:latest \
+  --dns-name-label evidence-app \
+  --ports 3000
+```
+
+### Kubernetes
+
+<CodeGroup>
+```yaml deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evidence-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: evidence
+  template:
+    metadata:
+      labels:
+        app: evidence
+    spec:
+      containers:
+      - name: evidence
+        image: evidence-app:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evidence-service
+spec:
+  selector:
+    app: evidence
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+  type: LoadBalancer
+```
+</CodeGroup>
+
+Apply the configuration:
+
+```bash
+kubectl apply -f deployment.yaml
+```
+
+## Optimization Tips
+
+### Multi-Stage Builds
+
+Use multi-stage builds to reduce final image size:
+- Build stage includes all build dependencies
+- Production stage only includes runtime dependencies and built files
+
+### Layer Caching
+
+Optimize build times by ordering Dockerfile commands:
+1. Copy package files first
+2. Install dependencies
+3. Copy source code last
+
+This ensures dependency layers are cached when only source code changes.
+
+### Smaller Base Images
+
+Use Alpine-based images for smaller sizes:
+- `node:18-alpine` instead of `node:18`
+- `nginx:alpine` instead of `nginx`
+
+## Troubleshooting
+
+### Build Fails with Memory Error
+
+Increase Docker memory limit or add to Dockerfile:
+
+```dockerfile
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+```
+
+### Container Exits Immediately
+
+Check logs:
+```bash
+docker logs <container-id>
+```
+
+### Can't Connect to Database
+
+- Verify network connectivity between containers
+- Use service names (not localhost) in Docker Compose
+- Check firewall rules for external databases
+
+### Files Not Updating
+
+Clear Docker cache:
+```bash
+docker build --no-cache -t evidence-app:latest .
+```
+
+## Next Steps
+
+- Set up [CI/CD pipelines](#) for automated builds
+- Configure [health checks](https://docs.docker.com/engine/reference/builder/#healthcheck)
+- Implement [secrets management](https://docs.docker.com/engine/swarm/secrets/)

@@ -1,0 +1,272 @@
+---
+title: Callout
+description: Display annotated data points with customizable labels and symbols
+icon: comment
+---
+
+The Callout component displays a single data point with a visual marker and optional label. It's a specialized version of ReferencePoint designed for highlighting specific values or annotations on charts or in standalone displays.
+
+## Basic Usage
+
+```html
+<Callout 
+  x="2024-01-15" 
+  y={1250}
+  label="Peak Sales"
+/>
+```
+
+## Props
+
+### Data Props
+
+<ParamField path="data" type="QueryResult" default="undefined">
+  Data source for the callout. If provided, `x` and `y` should reference column names.
+</ParamField>
+
+<ParamField path="x" type="number | string" default="undefined">
+  X-axis position for the callout. Can be a number, date string, or column reference.
+</ParamField>
+
+<ParamField path="y" type="number | string" default="undefined">
+  Y-axis position for the callout. Can be a number or column reference.
+</ParamField>
+
+<ParamField path="emptySet" type="'pass' | 'warn' | 'error'" default="undefined">
+  How to handle empty datasets:
+  - **pass**: Silently skip rendering
+  - **warn**: Show a warning message
+  - **error**: Show an error message
+</ParamField>
+
+<ParamField path="emptyMessage" type="string" default="undefined">
+  Custom message to display when the dataset is empty.
+</ParamField>
+
+### Label Props
+
+<ParamField path="label" type="string" default="undefined">
+  Text displayed in the callout label.
+</ParamField>
+
+<ParamField path="labelColor" type="string" default="undefined">
+  Text color for the label. Can be a color token or CSS color value.
+</ParamField>
+
+<ParamField path="labelWidth" type="number | 'fit' | string" default="80">
+  Width of the label box. Use `'fit'` to auto-size to content.
+</ParamField>
+
+<ParamField path="labelPadding" type="number | string" default="8">
+  Padding inside the label box in pixels.
+</ParamField>
+
+<ParamField path="labelPosition" type="'top' | 'bottom' | 'left' | 'right'" default="'top'">
+  Position of the label relative to the symbol.
+</ParamField>
+
+<ParamField path="labelBackgroundColor" type="string" default="'base-100'">
+  Background color of the label box.
+</ParamField>
+
+<ParamField path="labelBorderWidth" type="number | string" default="1">
+  Border width around the label in pixels.
+</ParamField>
+
+<ParamField path="labelBorderRadius" type="number | string" default="4">
+  Corner radius of the label box in pixels.
+</ParamField>
+
+<ParamField path="labelBorderColor" type="string" default="'base-300'">
+  Color of the label border.
+</ParamField>
+
+<ParamField path="labelBorderType" type="'solid' | 'dotted' | 'dashed'" default="undefined">
+  Style of the label border.
+</ParamField>
+
+### Text Formatting Props
+
+<ParamField path="fontSize" type="number | string" default="undefined">
+  Font size for the label text in pixels.
+</ParamField>
+
+<ParamField path="align" type="'left' | 'center' | 'right'" default="undefined">
+  Text alignment within the label.
+</ParamField>
+
+<ParamField path="bold" type="boolean" default="undefined">
+  Whether to bold the label text.
+</ParamField>
+
+<ParamField path="italic" type="boolean" default="undefined">
+  Whether to italicize the label text.
+</ParamField>
+
+<ParamField path="preserveWhitespace" type="boolean" default="false">
+  Whether to preserve whitespace in the label text.
+</ParamField>
+
+### Symbol Props
+
+<ParamField path="symbol" type="'circle' | 'square' | 'diamond' | 'triangle' | 'cross'" default="'circle'">
+  Shape of the marker symbol.
+</ParamField>
+
+<ParamField path="symbolColor" type="string" default="undefined">
+  Fill color of the symbol. Defaults to `color` if not specified.
+</ParamField>
+
+<ParamField path="symbolSize" type="number | string" default="8">
+  Size of the symbol in pixels.
+</ParamField>
+
+<ParamField path="symbolOpacity" type="number | string" default="undefined">
+  Opacity of the symbol (0-1).
+</ParamField>
+
+<ParamField path="symbolBorderWidth" type="number | string" default="undefined">
+  Border width around the symbol in pixels.
+</ParamField>
+
+<ParamField path="symbolBorderColor" type="string" default="undefined">
+  Color of the symbol border.
+</ParamField>
+
+### General Props
+
+<ParamField path="color" type="string" default="'base-content-muted'">
+  Default color for the callout (used for symbol and text if specific colors aren't set).
+</ParamField>
+
+## Examples
+
+### Simple Callout
+
+```html
+<Callout 
+  x={42} 
+  y={350}
+  label="Target"
+/>
+```
+
+### Styled Callout
+
+```html
+<Callout 
+  x="2024-03-15" 
+  y={1850}
+  label="Record High"
+  color="green"
+  symbolSize={12}
+  labelWidth="fit"
+  bold
+/>
+```
+
+### Custom Symbol
+
+```html
+<Callout 
+  x={100} 
+  y={75}
+  label="Outlier"
+  symbol="diamond"
+  symbolColor="#ff0000"
+  symbolSize={10}
+/>
+```
+
+### Label Positioning
+
+```html
+<Callout 
+  x={50} 
+  y={200}
+  label="Baseline"
+  labelPosition="right"
+  labelBackgroundColor="yellow-100"
+  labelBorderColor="yellow-500"
+/>
+```
+
+### With Data
+
+```sql peak_day
+SELECT 
+  date,
+  revenue
+FROM sales
+ORDER BY revenue DESC
+LIMIT 1
+```
+
+```html
+<LineChart data={daily_sales} x="date" y="revenue" />
+<Callout 
+  data={peak_day}
+  x="date"
+  y="revenue"
+  label="Peak Day: ${peak_day[0].revenue}"
+  labelPosition="top"
+  color="accent"
+/>
+```
+
+### Multiple Callouts
+
+```html
+<Callout x="2024-01-15" y={1200} label="Q1 Peak" color="blue" />
+<Callout x="2024-04-20" y={1450} label="Q2 Peak" color="green" />
+<Callout x="2024-07-10" y={980} label="Summer Dip" color="orange" labelPosition="bottom" />
+<Callout x="2024-11-25" y={1600} label="Holiday Rush" color="red" />
+```
+
+### Formatted Label
+
+```html
+<Callout 
+  x={75} 
+  y={425}
+  label="Goal: $425K"
+  fontSize={14}
+  bold
+  align="center"
+  labelWidth={100}
+  labelPadding={12}
+  labelBorderWidth={2}
+  labelBorderRadius={8}
+/>
+```
+
+### Dashed Border
+
+```html
+<Callout 
+  x="2024-06-01" 
+  y={300}
+  label="Projection Start"
+  labelBorderType="dashed"
+  labelBorderColor="gray-400"
+  symbolOpacity={0.5}
+/>
+```
+
+## Use Cases
+
+- **Peak/trough annotations**: Mark significant highs and lows
+- **Goal indicators**: Show targets or thresholds
+- **Event markers**: Highlight important dates or milestones
+- **Outlier identification**: Draw attention to unusual data points
+- **Benchmark comparisons**: Show reference points for comparison
+- **Trend annotations**: Mark inflection points or pattern changes
+
+## Notes
+
+- The Callout is a wrapper around the ReferencePoint component with different default styling
+- All props are passed through to ReferencePoint with `chartType="Callout"`
+- Works both as a standalone component and overlaid on charts
+- Position coordinates should match the scale/units of the associated chart
+- Labels automatically avoid overlapping when possible
+- Default styling uses muted colors for subtlety; override with `color` prop for prominence

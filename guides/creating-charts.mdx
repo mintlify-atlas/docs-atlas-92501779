@@ -1,0 +1,486 @@
+---
+title: Creating Charts and Visualizations
+description: Master Evidence's chart components to build compelling data visualizations
+---
+
+Evidence provides powerful, customizable chart components that turn your SQL queries into beautiful visualizations. This guide covers all chart types with real examples.
+
+## Chart Fundamentals
+
+All Evidence charts follow a similar pattern:
+
+```markdown
+<ChartType 
+  data={your_query_result}
+  x="column_for_x_axis"
+  y="column_for_y_axis"
+/>
+```
+
+Charts automatically:
+- Detect data types (dates, numbers, categories)
+- Format axes and labels
+- Provide interactive tooltips
+- Enable download as image or CSV
+
+## Line Charts
+
+Perfect for time series and trends.
+
+<Steps>
+
+<Step title="Basic Line Chart">
+
+Create a query for time-series data:
+
+```sql orders_by_month
+SELECT 
+  DATE_TRUNC('month', order_datetime) as month,
+  SUM(sales) as total_sales,
+  COUNT(*) as num_orders
+FROM orders
+GROUP BY DATE_TRUNC('month', order_datetime)
+ORDER BY month
+```
+
+Create the chart:
+
+```markdown
+<LineChart 
+  data={orders_by_month}
+  x="month"
+  y="total_sales"
+  yAxisTitle="Sales per Month"
+  yFmt="usd"
+/>
+```
+
+</Step>
+
+<Step title="Multi-Series Line Chart">
+
+Show multiple lines on one chart:
+
+```sql sales_by_category
+SELECT 
+  DATE_TRUNC('month', order_datetime) as month,
+  category,
+  SUM(sales) as total_sales
+FROM orders
+GROUP BY month, category
+ORDER BY month
+```
+
+```markdown
+<LineChart 
+  data={sales_by_category}
+  x="month"
+  y="total_sales"
+  series="category"
+/>
+```
+
+</Step>
+
+<Step title="Multiple Y Axes">
+
+Compare metrics with different scales:
+
+```markdown
+<LineChart 
+  data={orders_by_month}
+  x="month"
+  y="total_sales"
+  y2="num_orders"
+  y2SeriesType="bar"
+  labels="true"
+/>
+```
+
+This shows sales as a line and orders as bars on a secondary axis.
+
+</Step>
+
+</Steps>
+
+### Line Chart Options
+
+- `step=true` - Create step charts
+- `yLog=true` - Use logarithmic scale
+- `labels=true` - Show value labels
+- `colorPalette={['#cf0d06', '#eb5752']}` - Custom colors
+
+## Bar Charts
+
+Ideal for comparing categories.
+
+<Steps>
+
+<Step title="Basic Bar Chart">
+
+```sql orders_by_category
+SELECT 
+  category,
+  SUM(sales) as total_sales,
+  COUNT(*) as num_orders
+FROM orders
+GROUP BY category
+ORDER BY total_sales DESC
+```
+
+```markdown
+<BarChart
+  data={orders_by_category}
+  x="category"
+  y="total_sales"
+  xAxisTitle="Category"
+/>
+```
+
+</Step>
+
+<Step title="Horizontal Bar Chart">
+
+Better for long category names:
+
+```markdown
+<BarChart
+  data={orders_by_category}
+  x="category"
+  y="total_sales"
+  swapXY="true"
+  sort="true"
+/>
+```
+
+</Step>
+
+<Step title="Stacked Bar Chart">
+
+Show composition over time:
+
+```sql orders_by_month_category
+SELECT 
+  DATE_TRUNC('month', order_datetime) as month,
+  category,
+  SUM(sales) as total_sales
+FROM orders
+WHERE YEAR(order_datetime) = 2021
+GROUP BY month, category
+```
+
+```markdown
+<BarChart 
+  data={orders_by_month_category}
+  x="month"
+  y="total_sales"
+  series="category"
+  labels="true"
+/>
+```
+
+</Step>
+
+<Step title="Grouped Bar Chart">
+
+Compare categories side-by-side:
+
+```markdown
+<BarChart 
+  data={orders_by_month_category}
+  x="month"
+  y="total_sales"
+  series="category"
+  type="grouped"
+/>
+```
+
+</Step>
+
+</Steps>
+
+### Bar Chart Options
+
+- `swapXY=true` - Create horizontal bars
+- `type=grouped` - Group bars instead of stacking
+- `labels=true` - Show value labels
+- `stackTotalLabel=false` - Hide total labels on stacked bars
+- `sort=true` - Automatically sort by value
+
+## Area Charts
+
+Show cumulative values and trends.
+
+```markdown
+<AreaChart
+  data={orders_by_category}
+  x="month"
+  y="total_sales"
+  series="category"
+/>
+```
+
+### Area Chart Types
+
+**Stacked Area** (default):
+```markdown
+<AreaChart 
+  data={sales_by_category}
+  x="month"
+  y="total_sales"
+  series="category"
+/>
+```
+
+**100% Stacked Area**:
+```markdown
+<AreaChart 
+  data={sales_by_category}
+  x="month"
+  y="total_sales"
+  series="category"
+  type="stacked100"
+/>
+```
+
+**Single Area with Custom Color**:
+```markdown
+<AreaChart
+  data={sales_by_category.filter(d => d.category === 'Electronics')}
+  x="month"
+  y="total_sales"
+  lineColor="red"
+/>
+```
+
+## Advanced Features
+
+### Reference Lines
+
+Add target lines or thresholds:
+
+```markdown
+<BarChart
+  data={orders_by_category}
+  x="category"
+  y="total_sales"
+>
+  <ReferenceLine y=50000lt;ReferenceLine y="50000" label="Target" />
+  <ReferenceLine y=75000lt;ReferenceLine y="75000" label="Stretch Goal" hideValue=false />
+</BarChart>
+```
+
+### Filtering Data
+
+Use JavaScript to filter query results:
+
+```markdown
+<AreaChart 
+  data={orders_by_category.filter(d => d.category === 'Sinister Toys')}
+  x="month"
+  y="total_sales"
+  legend="false"
+/>
+```
+
+### Custom Formatting
+
+Control how values display:
+
+```markdown
+<LineChart 
+  data={orders_by_month}
+  x="month"
+  y="total_sales"
+  yFmt=usd0k          # $45k
+  xFmt='mmm d'        # Jan 15
+/>
+```
+
+Common format codes:
+- `usd` - $1,234.56
+- `usd0` - $1,235
+- `usd0k` - $12k
+- `pct` - 45.2%
+- `num` - 1,234.56
+- `#,##0.00` - Custom number format
+
+### Custom Height
+
+Adjust chart size:
+
+```markdown
+<BarChart 
+  data={orders_by_category}
+  x="category"
+  y="total_sales"
+  chartAreaHeight=500
+/>
+```
+
+### ECharts Customization
+
+Evidence uses Apache ECharts under the hood. You can pass custom options:
+
+```markdown
+<BarChart
+  data={orders_by_category}
+  x="category"
+  y="total_sales"
+  echartsOptions={{
+    textStyle: {
+      fontFamily: "Inter"
+    },
+    grid: {
+      left: '50px',
+      right: '50px'
+    }
+  }}
+/>
+```
+
+## Real-World Examples
+
+### Sales Dashboard
+
+```markdown
+---
+title: Sales Performance
+queries:
+  - orders_by_month: orders_by_month.sql
+  - orders_by_category: orders_by_category.sql
+---
+
+# Sales Performance Dashboard
+
+## Monthly Revenue Trend
+
+<LineChart 
+  data={orders_by_month}
+  x="month"
+  y="total_sales"
+  yAxisTitle="Revenue"
+  yFmt="usd0k"
+  labels="true"
+/>
+
+## Category Breakdown
+
+<BarChart 
+  data={orders_by_category}
+  x="category"
+  y="total_sales"
+  swapXY="true"
+  sort="true"
+>
+  <ReferenceLine y=100000lt;ReferenceLine y="100000" label="Category Target" />
+</BarChart>
+
+## Category Trends
+
+```sql category_trends
+SELECT 
+  DATE_TRUNC('month', order_datetime) as month,
+  category,
+  SUM(sales) as sales
+FROM orders
+WHERE order_datetime >= CURRENT_DATE - INTERVAL '12 months'
+GROUP BY month, category
+```
+
+<AreaChart 
+  data={category_trends}
+  x="month"
+  y="sales"
+  series="category"
+/>
+```
+
+### Comparison Charts
+
+```markdown
+## Sales vs Orders
+
+<LineChart 
+  data={orders_by_month}
+  x="month"
+  y="total_sales"
+  y2="num_orders"
+  y2SeriesType="bar"
+  colorPalette={['rgb(110,117,176,0.8)','rgb(37,91,161)']}
+  labels="true"
+/>
+```
+
+## Additional Chart Types
+
+Evidence supports many more chart types:
+
+- **ScatterPlot** - Correlations and distributions
+- **BubbleChart** - Three-dimensional comparisons
+- **Histogram** - Frequency distributions  
+- **BoxPlot** - Statistical distributions
+- **Heatmap** - Matrix visualizations
+- **Sankey** - Flow diagrams
+- **Funnel** - Conversion funnels
+
+See the Evidence docs for complete details on each chart type.
+
+## Data Tables
+
+Display raw data with rich formatting:
+
+```markdown
+<DataTable data={orders_by_category} />
+```
+
+### Enhanced Tables
+
+```markdown
+<DataTable 
+  data={orders_by_category}
+  search="true"
+  rowNumbers="true"
+  rows=20
+>
+  <Column id=categorylt;Column id="category" />
+  <Column id=total_saleslt;Column id="total_sales" fmt="usd0k" contentType=colorscale />
+  <Column id=num_orderslt;Column id="num_orders" contentType=bar />
+</DataTable>
+```
+
+Column content types:
+- `colorscale` - Color-coded values
+- `bar` - Inline bar visualization
+- `link` - Clickable links
+- `sparkline` - Inline sparkline charts
+
+## Best Practices
+
+### Choose the Right Chart
+
+- **Time series** → Line or Area chart
+- **Comparisons** → Bar chart
+- **Composition** → Stacked bar or Area chart
+- **Distribution** → Histogram or Box plot
+- **Correlation** → Scatter plot
+
+### Simplify Visuals
+
+- **Limit series** - Too many lines/bars create clutter
+- **Filter data** - Show top 10, not all 100 categories
+- **Use color purposefully** - Highlight key insights
+- **Add context** - Use reference lines for targets
+
+### Format for Readability
+
+- **Appropriate precision** - Use `usd0` instead of `usd` for large numbers
+- **Consistent scales** - Compare apples to apples
+- **Clear labels** - Set `xAxisTitle` and `yAxisTitle`
+- **Readable dates** - Format with `xFmt='mmm yyyy'`
+
+## Next Steps
+
+- [Build templated pages](/guides/templating) - Create dynamic drill-down pages
+- [Customize styling](/guides/styling) - Match your brand
+- [Add interactivity](/components/input-components) - Use dropdowns and filters

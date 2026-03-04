@@ -1,0 +1,211 @@
+---
+title: 'Delta'
+description: 'Display a change value with directional indicators and color coding'
+---
+
+## Overview
+
+The `Delta` component displays a numeric change with visual indicators (arrows) and color coding to show positive, negative, or neutral changes. Perfect for showing comparisons, growth rates, and changes over time.
+
+## Basic Usage
+
+```jsx
+<Delta data={metrics} column="revenue_change" />
+```
+
+## With Formatting
+
+```jsx
+<Delta data={metrics} column="growth_rate" fmt="pct1" />
+```
+
+## As Chip
+
+```jsx
+<Delta data={metrics} column="change" fmt="pct1" chip />
+```
+
+## Props
+
+### Data Selection
+
+<ParamField path="data" type="Query | object | array">
+  Query result, object, or array containing the delta value.
+</ParamField>
+
+<ParamField path="column" type="string">
+  Column name containing the delta value. If not specified, uses first column.
+</ParamField>
+
+<ParamField path="value" type="number">
+  Direct numeric value instead of using data. Use either `data` or `value`, not both.
+</ParamField>
+
+<ParamField path="row" type="number" default="0">
+  Row index to select from the dataset (0-based).
+</ParamField>
+
+### Display Options
+
+<ParamField path="text" type="string">
+  Label text to display after the delta (e.g., "vs. prev month").
+</ParamField>
+
+<ParamField path="chip" type="boolean" default="false">
+  Display as a chip with background color and border.
+</ParamField>
+
+<ParamField path="showValue" type="boolean" default="true">
+  Show the numeric value.
+</ParamField>
+
+<ParamField path="showSymbol" type="boolean" default="true">
+  Show the directional arrow symbol (▲/▼).
+</ParamField>
+
+<ParamField path="symbolPosition" type="'left' | 'right'" default="'right'">
+  Position of the arrow symbol relative to the value.
+</ParamField>
+
+### Formatting
+
+<ParamField path="fmt" type="string">
+  Format string for the value. Examples: `"pct1"`, `"usd"`, `"#,##0"`.
+</ParamField>
+
+### Behavior
+
+<ParamField path="downIsGood" type="boolean" default="false">
+  Reverse color coding (green for negative, red for positive). Use for metrics where decreases are positive (e.g., costs, errors).
+</ParamField>
+
+<ParamField path="neutralMin" type="number" default="0">
+  Minimum value for neutral range. Values between neutralMin and neutralMax display as neutral.
+</ParamField>
+
+<ParamField path="neutralMax" type="number" default="0">
+  Maximum value for neutral range.
+</ParamField>
+
+### Styling
+
+<ParamField path="align" type="'left' | 'center' | 'right'" default="'right'">
+  Text alignment.
+</ParamField>
+
+<ParamField path="fontClass" type="string" default="chip ? 'text-sm' : 'text-base'">
+  CSS class for font styling.
+</ParamField>
+
+### Error Handling
+
+<ParamField path="emptySet" type="'pass' | 'warn' | 'error'">
+  How to handle empty datasets.
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom message to display when dataset is empty.
+</ParamField>
+
+## Examples
+
+### Basic Deltas
+
+```jsx
+Positive: <Delta data={metrics} column="positive" fmt="pct1" />
+Neutral: <Delta data={metrics} column="neutral" fmt="pct1" />
+Negative: <Delta data={metrics} column="negative" fmt="pct1" />
+```
+
+### Chip Style
+
+```jsx
+<Delta data={metrics} column="positive" fmt="pct1" chip />
+<Delta data={metrics} column="neutral" fmt="pct1" chip />
+<Delta data={metrics} column="negative" fmt="pct1" chip />
+```
+
+### With Custom Text
+
+```jsx
+<Delta 
+  data={sales} 
+  column="revenue_change" 
+  fmt="pct1" 
+  text="vs. last quarter"
+/>
+```
+
+### Down is Good (e.g., Cost Reduction)
+
+```jsx
+<Delta 
+  data={costs} 
+  column="cost_change" 
+  fmt="pct1" 
+  downIsGood
+  text="cost reduction"
+/>
+```
+
+### With Neutral Range
+
+```jsx
+<Delta 
+  data={metrics} 
+  column="change" 
+  fmt="pct1" 
+  neutralMin={-0.05}
+  neutralMax={0.05}
+  text="within ±5% is neutral"
+/>
+```
+
+### Symbol Positioning
+
+```jsx
+<Delta data={metrics} column="change" fmt="pct1" symbolPosition="left" />
+```
+
+### Using Direct Value
+
+```jsx
+<Delta value={0.366} fmt="pct1" />
+<Delta value={-0.156} fmt="pct1" downIsGood />
+```
+
+### Hide Symbol or Value
+
+```jsx
+<Delta data={metrics} column="change" fmt="pct1" showSymbol={false} />
+<Delta data={metrics} column="change" showValue={false} />
+```
+
+### In BigValue Component
+
+```jsx
+<BigValue 
+  data={revenue} 
+  value="current" 
+  comparison="change"
+  comparisonTitle="vs. last month"
+  fmt="usd0"
+  comparisonFmt="pct1"
+/>
+```
+
+## Color Coding
+
+The Delta component uses color coding based on the value:
+
+- **Positive values** (> neutralMax): Green (or red if `downIsGood={true}`)
+- **Negative values** (< neutralMin): Red (or green if `downIsGood={true}`)
+- **Neutral values** (between neutralMin and neutralMax): Gray
+
+## Notes
+
+- Arrows: ▲ for positive, ▼ for negative, – for neutral
+- Use `chip` for a more prominent, badge-like appearance
+- `downIsGood` is useful for metrics like costs, error rates, or load times where decreases are improvements
+- The neutral range is inclusive: neutralMin ≤ value ≤ neutralMax
+- When using `value` prop directly, `data` is not required

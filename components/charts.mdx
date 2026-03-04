@@ -1,0 +1,428 @@
+---
+title: Chart Components
+description: Complete reference for all Evidence chart components including bar charts, line charts, area charts, and more
+---
+
+Evidence provides a comprehensive set of chart components for data visualization. All charts are built on Apache ECharts and support extensive customization.
+
+## Available Chart Types
+
+<CardGroup cols={3}>
+  <Card title="BarChart" icon="chart-column">
+    Vertical and horizontal bars, stacked and grouped
+  </Card>
+  <Card title="LineChart" icon="chart-line">
+    Time series and trend lines
+  </Card>
+  <Card title="AreaChart" icon="chart-area">
+    Filled area charts and stacked areas
+  </Card>
+  <Card title="ScatterPlot" icon="circle">
+    Scatter and bubble charts
+  </Card>
+  <Card title="BubbleChart" icon="circle-dot">
+    Sized bubbles for 3-dimensional data
+  </Card>
+  <Card title="Heatmap" icon="table-cells">
+    Color-coded matrix visualizations
+  </Card>
+  <Card title="BoxPlot" icon="chart-simple">
+    Distribution and quartile analysis
+  </Card>
+  <Card title="FunnelChart" icon="filter">
+    Conversion funnels and pipelines
+  </Card>
+  <Card title="SankeyDiagram" icon="diagram-project">
+    Flow and relationship diagrams
+  </Card>
+</CardGroup>
+
+## BarChart
+
+Bar charts are ideal for comparing categories or showing changes over time.
+
+### Basic Bar Chart
+
+```markdown
+```sql orders_by_category
+SELECT 
+  category,
+  SUM(sales) as total_sales
+FROM orders
+GROUP BY category
+ORDER BY total_sales DESC
+```
+
+<BarChart
+  data={orders_by_category}
+  x="category"
+  y="total_sales"
+  xAxisTitle="Product Category"
+/>
+```
+
+### Stacked Bar Chart
+
+Show multiple series stacked on top of each other:
+
+```markdown
+<BarChart 
+  data={orders_by_category_2021} 
+  x="month" 
+  y="sales"
+  series="category"
+  labels="true"
+/>
+```
+
+### Grouped Bar Chart
+
+Display series side-by-side for comparison:
+
+```markdown
+<BarChart 
+  data={orders_by_category_2021} 
+  x="month" 
+  y="sales"
+  series="category" 
+  type="grouped"
+/>
+```
+
+### Horizontal Bar Chart
+
+Swap axes with `swapXY=true`:
+
+```markdown
+<BarChart
+  data={orders_by_category}
+  x="category"
+  y="total_sales"
+  swapXY="true"
+/>
+```
+
+### Props
+
+<ParamField path="data" type="QueryResult" required>
+  Query result containing the data to visualize
+</ParamField>
+
+<ParamField path="x" type="string" required>
+  Column name for x-axis
+</ParamField>
+
+<ParamField path="y" type="string | string[]" required>
+  Column name(s) for y-axis values
+</ParamField>
+
+<ParamField path="series" type="string">
+  Column name for grouping data into multiple series
+</ParamField>
+
+<ParamField path="type" type="'stacked' | 'grouped' | 'stacked100'" default="stacked">
+  Bar chart type
+</ParamField>
+
+<ParamField path="swapXY" type="boolean" default="false">
+  Create horizontal bar chart
+</ParamField>
+
+<ParamField path="labels" type="boolean" default="false">
+  Show value labels on bars
+</ParamField>
+
+<ParamField path="stackTotalLabel" type="boolean" default="true">
+  Show total label on stacked bars
+</ParamField>
+
+<ParamField path="yLog" type="boolean" default="false">
+  Use logarithmic scale for y-axis
+</ParamField>
+
+<ParamField path="colorPalette" type="string | string[]" default="default">
+  Color palette or array of colors
+</ParamField>
+
+## LineChart
+
+Line charts are perfect for showing trends over time.
+
+### Basic Line Chart
+
+```markdown
+```sql monthly_revenue
+SELECT 
+  DATE_TRUNC('month', order_date) as month,
+  SUM(revenue) as revenue
+FROM orders
+GROUP BY 1
+ORDER BY 1
+```
+
+<LineChart
+  data={monthly_revenue}
+  x="month"
+  y="revenue"
+  title="Monthly Revenue Trend"
+/>
+```
+
+### Multiple Series
+
+```markdown
+<LineChart
+  data={sales_by_region}
+  x="month"
+  y="revenue"
+  series="region"
+/>
+```
+
+### Step Line
+
+```markdown
+<LineChart
+  data={data}
+  x="month"
+  y="value"
+  step="true"
+  stepPosition="middle"
+/>
+```
+
+## AreaChart
+
+Area charts are similar to line charts but with filled areas below the line.
+
+### Basic Area Chart
+
+```markdown
+<AreaChart
+  data={orders_by_category}
+  x="month"
+  y="sales"
+/>
+```
+
+### Stacked Area
+
+```markdown
+<AreaChart 
+  data={orders_by_category} 
+  x="month" 
+  y="sales"
+  series="category"
+/>
+```
+
+### 100% Stacked Area
+
+```markdown
+<AreaChart 
+  data={orders_by_category} 
+  x="month" 
+  y="sales"
+  series="category"
+  type="stacked100"
+/>
+```
+
+## ScatterPlot
+
+Scatter plots show the relationship between two variables.
+
+```markdown
+```sql customer_metrics
+SELECT 
+  customer_id,
+  total_orders,
+  total_revenue,
+  customer_segment
+FROM customer_summary
+```
+
+<ScatterPlot
+  data={customer_metrics}
+  x="total_orders"
+  y="total_revenue"
+  series="customer_segment"
+/>
+```
+
+## BubbleChart
+
+Bubble charts add a third dimension with bubble size.
+
+```markdown
+<BubbleChart
+  data={products}
+  x="price"
+  y="sales_volume"
+  size="profit_margin"
+  series="category"
+/>
+```
+
+## BoxPlot
+
+Box plots show data distribution and quartiles.
+
+```markdown
+<BoxPlot
+  data={sales_data}
+  name="product"
+  min="min_value"
+  q1="q1_value"
+  median="median_value"
+  q3="q3_value"
+  max="max_value"
+/>
+```
+
+## Advanced Features
+
+### Reference Lines
+
+Add reference lines to any chart:
+
+```markdown
+<BarChart data={data} x="category" y=sales>
+  <ReferenceLine y=34234 label="Sales Target" hideValue=false/>
+</BarChart>
+```
+
+### Reference Areas
+
+```markdown
+<LineChart data={data} x="date" y="value>"
+  <ReferenceArea xMin='2021-01-01' xMax='2021-03-31' label="Q1" color="blue"/>
+</LineChart>
+```
+
+### Multiple Y-Axes
+
+Display two metrics with different scales:
+
+```markdown
+<BarChart 
+  data={orders_by_month} 
+  x="month" 
+  y="sales"
+  y2="num_orders"
+  y2SeriesType="line"
+/>
+```
+
+### Custom ECharts Options
+
+Extend any chart with custom ECharts configuration:
+
+```markdown
+<BarChart
+  data={data}
+  x="category"
+  y="value"
+  echartsOptions={{
+    textStyle: {
+      fontFamily: "Inter"
+    },
+    grid: {
+      right: '50px',
+      top: '10px'
+    }
+  }}
+/>
+```
+
+## Common Props
+
+These props are available on most chart components:
+
+<ParamField path="title" type="string">
+  Chart title displayed above the chart
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  Chart subtitle displayed below the title
+</ParamField>
+
+<ParamField path="xAxisTitle" type="string">
+  Label for the x-axis
+</ParamField>
+
+<ParamField path="yAxisTitle" type="string">
+  Label for the y-axis
+</ParamField>
+
+<ParamField path="legend" type="boolean" default="true">
+  Show or hide the legend
+</ParamField>
+
+<ParamField path="xGridlines" type="boolean" default="false">
+  Show vertical gridlines
+</ParamField>
+
+<ParamField path="yGridlines" type="boolean" default="true">
+  Show horizontal gridlines
+</ParamField>
+
+<ParamField path="chartAreaHeight" type="number">
+  Height of chart area in pixels
+</ParamField>
+
+<ParamField path="downloadableData" type="boolean" default="true">
+  Enable data download button
+</ParamField>
+
+<ParamField path="downloadableImage" type="boolean" default="true">
+  Enable image download button
+</ParamField>
+
+<ParamField path="connectGroup" type="string">
+  Connect multiple charts for synchronized interactions
+</ParamField>
+
+## Formatting
+
+### Value Formatting
+
+Use `fmt` props to control number display:
+
+- `yFmt=usd` - US Dollar format
+- `yFmt=eur` - Euro format
+- `yFmt=pct` - Percentage format
+- `yFmt=num0` - Integer format
+- `yFmt=num2` - 2 decimal places
+
+### Date Formatting
+
+Evidence automatically detects date columns. Customize with `xFmt`:
+
+```markdown
+<LineChart
+  data={data}
+  x="date"
+  y="value"
+  xFmt="MMM yyyy"
+/>
+```
+
+## Best Practices
+
+1. **Choose the right chart type** - Use bar charts for categories, line charts for trends
+2. **Limit series count** - Too many series makes charts hard to read
+3. **Add context** - Use titles, axis labels, and reference lines
+4. **Consider color** - Use colorPalette for consistent branding
+5. **Optimize for mobile** - Charts are responsive by default
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Tables" icon="table" href="/components/tables">
+    Display data in interactive tables
+  </Card>
+  <Card title="Inputs" icon="sliders" href="/components/inputs">
+    Add filters and interactivity
+  </Card>
+</CardGroup>

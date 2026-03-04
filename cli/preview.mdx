@@ -1,0 +1,139 @@
+---
+title: evidence preview
+description: Preview the production build locally
+---
+
+The `evidence preview` command starts a local server to preview your production build.
+
+## Syntax
+
+```bash
+evidence preview
+```
+
+## Description
+
+This command:
+
+- Serves the production build from the `./build` directory
+- Uses the `serve` package to start a static file server
+- Provides a local URL to preview your built application
+- Automatically increases Node.js memory limit to 4096MB
+- Supports both multi-page app (MPA) and single-page app (SPA) modes
+
+The preview server allows you to test the production build locally before deploying.
+
+## Prerequisites
+
+You must build your project before running preview:
+
+```bash
+evidence build
+evidence preview
+```
+
+## Usage Examples
+
+### Preview the production build
+
+```bash
+evidence preview
+```
+
+The server will start and display the local URL (typically `http://localhost:3000`).
+
+### SPA mode preview
+
+```bash
+VITE_EVIDENCE_SPA=true evidence preview
+```
+
+This serves the build in single-page application mode with client-side routing fallback.
+
+## Error Handling
+
+If no build directory is found, you'll see:
+
+```bash
+[!] No build directory found
+Run npm run build to create a build
+```
+
+Exit code: `1`
+
+## Server Options
+
+The preview command uses the `serve` package under the hood. The exact command executed:
+
+**Multi-page app (default):**
+```bash
+npx serve build
+```
+
+**Single-page app (SPA mode):**
+```bash
+npx serve build -s
+```
+
+The `-s` flag enables single-page application mode, which redirects all 404s to the root `index.html`.
+
+## Environment Variables
+
+<ParamField path="VITE_EVIDENCE_SPA" type="boolean" default="false">
+  When set to `true`, serves the build in SPA mode with client-side routing.
+</ParamField>
+
+Other environment variables are loaded from `.env` files automatically.
+
+See [Environment Variables](/cli/environment-variables) for a complete list.
+
+## Port Configuration
+
+The `serve` package automatically selects an available port. You can specify a custom port using serve's CLI options:
+
+```bash
+evidence preview -p 8080
+```
+
+## Exit Codes
+
+- `0` - Preview server started successfully
+- `1` - No build directory found
+- Non-zero - Server failed to start
+
+## Build Directory
+
+The preview command looks for the build in:
+
+```
+./build/
+```
+
+If you used a custom build directory:
+
+```bash
+EVIDENCE_BUILD_DIR=./dist evidence build
+```
+
+You'll need to manually preview that directory:
+
+```bash
+npx serve dist
+```
+
+## Deployment Testing
+
+The preview command is useful for testing:
+
+- Production build output
+- Asset loading and paths
+- Static file serving
+- Routing behavior
+- Performance characteristics
+
+This helps catch issues before deploying to production hosting.
+
+## Related Commands
+
+- [evidence build](/cli/build) - Build production outputs (required before preview)
+- [evidence dev](/cli/dev) - Development server with hot reloading

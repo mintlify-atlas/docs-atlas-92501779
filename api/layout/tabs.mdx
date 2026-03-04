@@ -1,0 +1,199 @@
+---
+title: Tabs
+description: Organize content into tabbed interfaces with customizable styling
+icon: folder
+---
+
+The Tabs component allows you to organize content into multiple tabs, showing only one tab's content at a time. It's perfect for grouping related information and reducing page clutter.
+
+## Basic Usage
+
+```html
+<Tabs>
+  <Tab label="Overview">
+    <p>Overview content goes here</p>
+  </Tab>
+  <Tab label="Details">
+    <p>Detailed information goes here</p>
+  </Tab>
+  <Tab label="Analysis">
+    <p>Analysis content goes here</p>
+  </Tab>
+</Tabs>
+```
+
+## Tabs Props
+
+<ParamField path="id" type="string" default="undefined">
+  Unique identifier for the tabs group. When set, the active tab is synced with the URL query parameter, allowing users to share links to specific tabs.
+</ParamField>
+
+<ParamField path="color" type="string | [string, string]" default="undefined">
+  Color for the active tab indicator. Can be:
+  - A color token (e.g., `"accent"`, `"blue"`) 
+  - A CSS color value (e.g., `"#ff0000"`)
+  - A tuple of two colors for gradient effects
+</ParamField>
+
+<ParamField path="printShowAll" type="boolean" default="true">
+  When printing, determines whether to show all tabs or just the active tab. Set to `false` to only print the currently visible tab.
+</ParamField>
+
+<ParamField path="fullWidth" type="boolean" default="false">
+  Makes each tab expand to fill available width equally. Useful for creating a more prominent tab bar.
+</ParamField>
+
+<ParamField path="background" type="boolean" default="false">
+  Adds a background color to inactive tabs, creating more visual distinction between active and inactive states.
+</ParamField>
+
+## Tab Props
+
+<ParamField path="label" type="string" required>
+  The text displayed on the tab button.
+</ParamField>
+
+<ParamField path="id" type="string" default="label value">
+  Unique identifier for the tab. Defaults to the label if not provided. Used in URL when parent Tabs has an id.
+</ParamField>
+
+<ParamField path="selected" type="boolean" default="false">
+  Whether this tab should be selected by default. If multiple tabs have `selected=true`, the last one wins.
+</ParamField>
+
+<ParamField path="description" type="string" default="undefined">
+  Optional description text shown alongside the tab label.
+</ParamField>
+
+## Examples
+
+### Basic Tabs
+
+```html
+<Tabs>
+  <Tab label="Sales">
+    <BarChart data={sales_data} />
+  </Tab>
+  <Tab label="Revenue">
+    <LineChart data={revenue_data} />
+  </Tab>
+  <Tab label="Profit">
+    <AreaChart data={profit_data} />
+  </Tab>
+</Tabs>
+```
+
+### Tabs with URL Sync
+
+```html
+<Tabs id="report-view">
+  <Tab label="Summary" id="summary">
+    <p>Executive summary</p>
+  </Tab>
+  <Tab label="Detailed" id="detailed">
+    <p>Detailed breakdown</p>
+  </Tab>
+</Tabs>
+```
+
+With this setup, selecting a tab updates the URL to `?report-view=summary` or `?report-view=detailed`, making it shareable.
+
+### Full Width Tabs with Background
+
+```html
+<Tabs fullWidth background>
+  <Tab label="Q1 2024">
+    <DataTable data={q1_data} />
+  </Tab>
+  <Tab label="Q2 2024">
+    <DataTable data={q2_data} />
+  </Tab>
+  <Tab label="Q3 2024">
+    <DataTable data={q3_data} />
+  </Tab>
+  <Tab label="Q4 2024">
+    <DataTable data={q4_data} />
+  </Tab>
+</Tabs>
+```
+
+### Custom Color
+
+```html
+<Tabs color="accent">
+  <Tab label="Performance">
+    <p>Performance metrics</p>
+  </Tab>
+  <Tab label="Efficiency">
+    <p>Efficiency analysis</p>
+  </Tab>
+</Tabs>
+```
+
+### Gradient Color
+
+```html
+<Tabs color={['#ff0000', '#0000ff']}>
+  <Tab label="Start">
+    <p>Beginning of analysis</p>
+  </Tab>
+  <Tab label="End">
+    <p>Conclusion</p>
+  </Tab>
+</Tabs>
+```
+
+### Default Selected Tab
+
+```html
+<Tabs>
+  <Tab label="Overview">
+    <p>Overview content</p>
+  </Tab>
+  <Tab label="Deep Dive" selected>
+    <p>This tab is selected by default</p>
+  </Tab>
+  <Tab label="Appendix">
+    <p>Additional information</p>
+  </Tab>
+</Tabs>
+```
+
+### Dynamic Tabs from Query
+
+```html
+<Tabs>
+  {#each categories as category}
+    <Tab label={category.name}>
+      <DataTable data={category.data} />
+    </Tab>
+  {/each}
+</Tabs>
+```
+
+## Print Behavior
+
+By default, when printing a page with tabs, all tab content is shown sequentially. This ensures nothing is hidden in the printed output. To change this behavior:
+
+```html
+<Tabs printShowAll={false}>
+  <!-- Only the active tab will be printed -->
+</Tabs>
+```
+
+## Use Cases
+
+- **Multi-period comparisons**: Switch between different time periods
+- **Data views**: Toggle between chart and table views of the same data
+- **Report sections**: Organize long reports into digestible sections
+- **Product categories**: Display different product lines or segments
+- **Geographic regions**: Show data for different regions or markets
+- **Scenario analysis**: Compare different scenarios or forecasts
+
+## Notes
+
+- The first tab is automatically selected if no tab has `selected=true`
+- Tab state is maintained when switching between tabs
+- URL synchronization (when using `id` prop) works without page reloads
+- Tabs are fully keyboard accessible
+- The active tab is persisted in the URL query string when the Tabs component has an `id`

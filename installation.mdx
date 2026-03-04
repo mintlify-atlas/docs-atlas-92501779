@@ -1,0 +1,406 @@
+---
+title: Installation
+description: Install Evidence using VSCode, command line, with dbt, Docker, or GitHub Codespaces
+---
+
+# Installation
+
+Evidence can be installed in multiple ways depending on your workflow and environment. Choose the method that works best for you.
+
+## VSCode extension (recommended)
+
+The VSCode extension provides the easiest way to get started with Evidence, including guided setup and integrated development tools.
+
+<Steps>
+
+<Step title="Install the extension">
+
+Install the Evidence extension from the VSCode Marketplace:
+
+<Card title="Evidence VSCode Extension" icon="code" href="https://marketplace.visualstudio.com/items?itemName=Evidence.evidence-vscode">
+  Click to install from the Visual Studio Marketplace
+</Card>
+
+Or search for "Evidence" in the VSCode Extensions panel (Ctrl/Cmd+Shift+X).
+
+</Step>
+
+<Step title="Create a new project">
+
+Open the Command Palette (F1 or Ctrl/Cmd+Shift+P) and run:
+
+```
+Evidence: New Evidence Project
+```
+
+Follow the prompts to create your project in your desired location.
+
+</Step>
+
+<Step title="Start Evidence">
+
+Click the **Start Evidence** button in the bottom status bar.
+
+<img src="/images/start-evidence-button.png" alt="Start Evidence button in VSCode" width="400" />
+
+This will:
+- Install all required dependencies
+- Start the Evidence development server
+- Open your browser automatically to `http://localhost:3000`
+
+<Note>
+On Windows, the first startup can take a couple of minutes as dependencies are installed.
+</Note>
+
+</Step>
+
+</Steps>
+
+## Command line installation
+
+Install Evidence directly from your terminal using your preferred package manager.
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npx degit evidence-dev/template my-evidence-app
+    cd my-evidence-app
+    npm install
+    npm run sources
+    npm run dev
+    ```
+  </Tab>
+  
+  <Tab title="yarn">
+    ```bash
+    npx degit evidence-dev/template my-evidence-app
+    cd my-evidence-app
+    yarn install
+    yarn sources
+    yarn dev
+    ```
+  </Tab>
+  
+  <Tab title="pnpm">
+    ```bash
+    npx degit evidence-dev/template my-evidence-app
+    cd my-evidence-app
+    pnpm install
+    pnpm sources
+    pnpm dev
+    ```
+  </Tab>
+</Tabs>
+
+Your Evidence app will be available at `http://localhost:3000`.
+
+<Tip>
+The `degit` command clones the Evidence template without git history, giving you a clean starting point.
+</Tip>
+
+## Install with dbt
+
+You can install Evidence inside your existing dbt project to create an analytics monorepo.
+
+```bash
+cd path/to/your/dbt/project
+npx degit evidence-dev/template reports
+npm --prefix ./reports install
+npm --prefix ./reports run sources
+npm --prefix ./reports run dev
+```
+
+This creates an Evidence project in a `reports` folder within your dbt project, allowing you to:
+- Version control your models and reports together
+- Make coordinated changes across your data transformation and reporting layers
+- Keep related code in a single repository
+
+<Note>
+This setup currently requires terminal access and cannot be done from the dbt Cloud UI.
+</Note>
+
+## GitHub Codespaces
+
+Run Evidence in a cloud-based development environment without any local installation.
+
+<Card title="Launch Evidence Codespace" icon="github" href="https://github.com/codespaces/new?machine=standardLinux32gb&repo=399252557&ref=main&geo=UsEast">
+  Create a new Evidence Codespace (opens GitHub)
+</Card>
+
+<Tip>
+Codespaces runs much faster on the VSCode Desktop app. After the Codespace boots, select the hamburger menu → **Open in VS Code Desktop**.
+</Tip>
+
+## Docker installation
+
+Run Evidence in a Docker container for consistent, isolated environments.
+
+<Info>
+Detailed Docker setup instructions are available in the Evidence documentation. The basic approach involves creating a Dockerfile that installs Node.js and Evidence dependencies.
+</Info>
+
+## Evidence Studio (cloud IDE)
+
+Evidence Studio is an AI-powered cloud IDE that provides the fastest way to build with Evidence.
+
+<Card title="Try Evidence Studio" icon="sparkles" href="https://evidence.studio/sign-up">
+  Get started with Evidence Studio - no installation required
+</Card>
+
+Features:
+- No local setup required
+- AI-powered code assistance
+- Instant previews
+- Integrated deployment
+
+## System requirements
+
+### Minimum requirements
+
+- **Node.js 18 or higher** (check with `node --version`)
+- **npm, yarn, or pnpm** for package management
+- **2GB RAM** for development
+- **Modern web browser** (Chrome, Firefox, Safari, Edge)
+
+### Recommended for best performance
+
+- **Node.js 20+**
+- **4GB+ RAM** (especially for large datasets)
+- **SSD storage** for faster builds
+
+<Note>
+Evidence automatically increases Node memory limit to 4GB when running build commands. You can override this by setting `NODE_OPTIONS=--max-old-space-size=8192` for 8GB.
+</Note>
+
+## Connect your database
+
+After installation, you'll want to connect your own data source. Evidence supports multiple databases and data warehouses.
+
+### Supported data sources
+
+<CardGroup cols={3}>
+  <Card title="PostgreSQL" icon="database">
+    PostgreSQL and compatible databases
+  </Card>
+  <Card title="Snowflake" icon="snowflake">
+    Snowflake data warehouse
+  </Card>
+  <Card title="BigQuery" icon="google">
+    Google BigQuery
+  </Card>
+  <Card title="DuckDB" icon="duck">
+    Local DuckDB databases
+  </Card>
+  <Card title="MySQL" icon="database">
+    MySQL and MariaDB
+  </Card>
+  <Card title="Databricks" icon="chart-network">
+    Databricks SQL
+  </Card>
+  <Card title="CSV/Parquet" icon="file-csv">
+    Flat files (CSV, Parquet)
+  </Card>
+  <Card title="MotherDuck" icon="cloud">
+    DuckDB in the cloud
+  </Card>
+  <Card title="SQLite" icon="database">
+    SQLite databases
+  </Card>
+</CardGroup>
+
+### Add a data source
+
+<Steps>
+
+<Step title="Navigate to settings">
+While your dev server is running, visit `http://localhost:3000/settings`.
+</Step>
+
+<Step title="Add new source">
+Click **Add new source** and select your database type from the list.
+</Step>
+
+<Step title="Configure connection">
+Enter your connection details. These are saved in:
+- `sources/[source_name]/connection.yaml` - non-secret configuration
+- `sources/[source_name]/connection.options.yaml` - encrypted credentials (base64 encoded)
+</Step>
+
+<Step title="Create source queries">
+Add `.sql` files to your source directory to define queries:
+
+```sql sources/my_database/orders.sql
+select * from orders
+where order_date >= '2024-01-01'
+```
+
+These queries run in your database's native SQL dialect.
+</Step>
+
+<Step title="Run sources">
+Execute your source queries to populate the data cache:
+
+```bash
+npm run sources
+```
+</Step>
+
+</Steps>
+
+### CSV files
+
+To use CSV files as a data source:
+
+1. Navigate to `http://localhost:3000/settings`
+2. Select **Add new source** → **CSV**
+3. Upload your CSV file or place it in `sources/[source_name]/`
+4. Run `npm run sources` to build the data cache
+
+Your CSV data will be available to query like any other data source.
+
+## CLI commands
+
+Evidence provides several CLI commands for development and deployment:
+
+### Development
+
+<CodeGroup>
+
+```bash Start dev server
+npx evidence dev
+```
+
+```bash Build sources
+npx evidence sources
+```
+
+```bash Build for production
+npx evidence build
+```
+
+```bash Preview production build
+npx evidence preview
+```
+
+</CodeGroup>
+
+### Advanced options
+
+```bash Build only changed sources
+npx evidence sources --changed
+```
+
+```bash Build specific sources
+npx evidence sources --sources my_database,other_db
+```
+
+```bash Build specific queries
+npx evidence sources --queries orders,customers
+```
+
+```bash Strict mode (fail on error)
+npx evidence sources --strict
+```
+
+```bash Debug mode
+npx evidence dev --debug
+```
+
+### Environment debugging
+
+View all Evidence environment variables:
+
+```bash
+npx evidence env-debug
+```
+
+Include values (⚠️ shows secrets):
+
+```bash
+npx evidence env-debug --include-values
+```
+
+## Project structure
+
+After installation, your Evidence project will have this structure:
+
+```
+my-evidence-app/
+├── pages/               # Your markdown pages
+│   └── index.md        # Homepage
+├── sources/            # Data source configurations
+│   └── needful_things/ # Demo database
+│       ├── connection.yaml
+│       └── orders.sql  # Source query
+├── static/             # Static assets (images, CSS)
+├── components/         # Custom Svelte components (optional)
+├── .evidence/          # Build artifacts (auto-generated)
+├── package.json        # Dependencies and scripts
+└── evidence.config.yaml # Evidence configuration
+```
+
+## Updating Evidence
+
+To update Evidence to the latest version:
+
+```bash
+npx evidence upgrade
+```
+
+This command updates all Evidence packages to their latest compatible versions.
+
+<Tip>
+Check the [Evidence changelog](https://github.com/evidence-dev/evidence/blob/main/CHANGELOG.md) before upgrading to see what's new.
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Follow the quickstart" icon="rocket" href="/quickstart">
+    Build your first Evidence app in 5 minutes
+  </Card>
+  
+  <Card title="Learn the syntax" icon="code" href="/core-concepts/syntax">
+    Understand Evidence-flavored Markdown
+  </Card>
+  
+  <Card title="Explore components" icon="chart-line" href="/components">
+    Browse the full component library
+  </Card>
+  
+  <Card title="Deploy your app" icon="cloud-arrow-up" href="/deployment">
+    Deploy to Netlify, Vercel, or your own infrastructure
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Node version error">
+    Evidence requires Node.js 18 or higher. Check your version with `node --version` and upgrade if needed using [nvm](https://github.com/nvm-sh/nvm) or by downloading from [nodejs.org](https://nodejs.org).
+  </Accordion>
+  
+  <Accordion title="Installation fails on Windows">
+    On Windows, you may need to install the Windows Build Tools:
+    
+    ```bash
+    npm install --global windows-build-tools
+    ```
+  </Accordion>
+  
+  <Accordion title="Port already in use">
+    If port 3000 is already in use, specify a different port:
+    
+    ```bash
+    npx vite dev --port 3001
+    ```
+  </Accordion>
+  
+  <Accordion title="Database connection fails">
+    Verify your connection credentials in `sources/[name]/connection.yaml` and ensure your database is accessible from your development machine.
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+If you encounter issues during installation, reach out on [Slack](https://slack.evidence.dev) or [open an issue on GitHub](https://github.com/evidence-dev/evidence/issues).
+</Note>

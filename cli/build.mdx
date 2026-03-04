@@ -1,0 +1,125 @@
+---
+title: evidence build
+description: Build Evidence project for production deployment
+---
+
+The `evidence build` command creates optimized production builds of your Evidence project.
+
+## Syntax
+
+```bash
+evidence build [options]
+```
+
+## Description
+
+This command builds your Evidence project for production deployment by:
+
+- Compiling all pages and components
+- Optimizing assets and code
+- Generating static HTML files
+- Creating hashed data files for caching
+- Copying outputs to the `./build` directory
+- Automatically increases Node.js memory limit to 4096MB
+
+The build process uses Vite to create a static adapter build of your SvelteKit application.
+
+## Options
+
+<ParamField path="--debug" type="boolean" default="false">
+  Enables verbose console logs during the build process. Useful for troubleshooting build issues.
+</ParamField>
+
+## Build Process
+
+1. Populates the `.evidence/template` directory with your project files
+2. Syncs all watched directories (pages, components, sources, etc.)
+3. Runs Vite build in the template directory
+4. Generates content hashes for data files
+5. Updates the manifest with hashed file paths
+6. Copies the final build to `./build` (or `EVIDENCE_BUILD_DIR`)
+
+## Usage Examples
+
+### Standard production build
+
+```bash
+evidence build
+```
+
+Output:
+```bash
+Build complete --> ./build
+```
+
+### Build with debug logging
+
+```bash
+evidence build --debug
+```
+
+### Build to a custom directory
+
+```bash
+EVIDENCE_BUILD_DIR=./dist evidence build
+```
+
+## Build Outputs
+
+The build creates the following structure in `./build`:
+
+```
+build/
+├── _app/              # Application code and assets
+├── [pages]/           # Static HTML pages
+└── static/
+    └── data/          # Hashed parquet data files
+        └── manifest.json
+```
+
+## Data File Hashing
+
+During the build, parquet data files are automatically hashed using MD5 to enable cache busting:
+
+```
+static/data/sqlite/transactions/transactions.parquet
+→ static/data/sqlite/transactions/a1b2c3d4/transactions.parquet
+```
+
+The manifest.json file is updated with the hashed paths.
+
+## Environment Variables
+
+- `EVIDENCE_BUILD_DIR` - Output directory for build files (default: `./build`)
+- `EVIDENCE_DATA_DIR` - Directory for data files (default: `./static/data`)
+- `EVIDENCE_DATA_URL_PREFIX` - URL prefix for data files (default: `static/data`)
+- `EVIDENCE_IS_BUILDING` - Set to `true` during build
+
+See [Environment Variables](/cli/environment-variables) for a complete list.
+
+## Exit Codes
+
+- `0` - Build completed successfully
+- Non-zero - Build failed
+
+On failure:
+```bash
+Build failed
+Build process exited with code 1
+```
+
+## Strict Mode Build
+
+For builds that fail on any error (useful in CI/CD):
+
+```bash
+evidence build:strict
+```
+
+This enables strict mode which causes the build to fail on warnings and errors that would normally be ignored.
+
+## Related Commands
+
+- [evidence dev](/cli/dev) - Start development server
+- [evidence preview](/cli/preview) - Preview the production build
+- [evidence sources](/cli/sources) - Build source data before building

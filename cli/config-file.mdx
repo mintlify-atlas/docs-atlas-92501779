@@ -1,0 +1,193 @@
+---
+title: Configuration Files
+description: Evidence configuration file reference
+---
+
+Evidence uses configuration files to customize build behavior, deployment settings, and data sources.
+
+## evidence.config.yaml
+
+The main Evidence configuration file located in your project root.
+
+### Example
+
+```yaml
+deployment:
+  basePath: /my-app
+
+components:
+  evidenceInclude: true
+```
+
+### Deployment Configuration
+
+<ParamField path="deployment.basePath" type="string" default="/">
+  Base path for the application when deployed to a subdirectory. Used by SvelteKit's `paths.base` configuration.
+</ParamField>
+
+## svelte.config.js
+
+Optional custom SvelteKit configuration file in your project root.
+
+### Supported Customizations
+
+You can extend Evidence's default SvelteKit configuration:
+
+```javascript
+/** @type {import('@sveltejs/kit').Config} */
+const config = {
+  preprocess: [
+    // Add custom preprocessors
+  ],
+  kit: {
+    // Customize SvelteKit options (except files)
+  }
+};
+
+export default config;
+```
+
+### Restrictions
+
+<Warning>
+  The following configurations are **disabled** for Evidence projects and will be ignored:
+  - `extensions` - File extensions are fixed to `.svelte` and `.md`
+  - `kit.files` - File locations cannot be changed
+</Warning>
+
+### Preprocessor Merging
+
+Custom preprocessors are appended to Evidence's default preprocessors:
+
+1. Evidence preprocessors (query extraction, etc.)
+2. Component injection
+3. PostCSS preprocessing
+4. Base path transformation
+5. **Your custom preprocessors**
+
+## Source Configuration
+
+Data source configuration is stored in `sources/[source-name]/connection.yaml`.
+
+### Example: PostgreSQL Source
+
+```yaml
+name: my_database
+type: postgres
+options:
+  host: localhost
+  database: mydb
+  user: ${db_user}
+  password: ${db_password}
+  port: 5432
+```
+
+### Variable Substitution
+
+Use `${variable}` syntax to reference environment variables:
+
+```yaml
+host: ${db_host}
+password: ${db_password}
+```
+
+Set variables:
+```bash
+EVIDENCE_VAR__db_host=localhost
+EVIDENCE_VAR__db_password=secret
+```
+
+See [Environment Variables](/cli/environment-variables#evidence-var) for details.
+
+### Environment Variable Override
+
+You can override any source option using environment variables:
+
+```bash
+EVIDENCE_SOURCE__my_database__host=production.db.com
+EVIDENCE_SOURCE__my_database__password=prod_secret
+```
+
+Pattern: `EVIDENCE_SOURCE__[source_name]__[option]`
+
+See [Environment Variables](/cli/environment-variables#evidence-source) for details.
+
+## package.json Scripts
+
+Recommended npm scripts for Evidence projects:
+
+```json
+{
+  "scripts": {
+    "dev": "evidence dev",
+    "build": "evidence build",
+    "preview": "evidence preview",
+    "sources": "evidence sources"
+  }
+}
+```
+
+### Usage
+
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run sources  # Generate data from sources
+```
+
+## Build Configuration
+
+The Evidence build system uses these internal configurations:
+
+### Adapter Configuration
+
+Static adapter settings from `svelte.config.js`:
+
+```javascript
+adapter: adapter({
+  pages: process.env.EVIDENCE_BUILD_DIR ?? './build',
+  strict: false
+})
+```
+
+Override the output directory:
+```bash
+EVIDENCE_BUILD_DIR=./dist evidence build
+```
+
+### File Locations (Fixed)
+
+```javascript
+files: {
+  routes: 'src/pages',
+  lib: 'src/components'
+}
+```
+
+These locations in `.evidence/template/` cannot be customized.
+
+## Template Directory
+
+Evidence uses `.evidence/template/` as an internal build directory:
+
+```
+.evidence/template/
+├── src/
+│   ├── pages/        # Your pages/ directory synced here
+│   └── components/   # Your components/ directory synced here
+├── static/
+│   └── data/         # Generated parquet files
+├── sources/          # Your sources/ directory synced here
+└── queries/          # Your queries/ directory synced here
+```
+
+<Note>
+  This directory is managed automatically by Evidence CLI commands. Manual changes will be overwritten.
+</Note>
+
+## Related
+
+- [Environment Variables](/cli/environment-variables) - Environment variable reference
+- [evidence sources](/cli/sources) - Source data generation
+- [evidence build](/cli/build) - Production builds

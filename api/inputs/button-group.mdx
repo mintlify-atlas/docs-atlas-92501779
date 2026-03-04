@@ -1,0 +1,237 @@
+---
+title: ButtonGroup
+description: A group of buttons for single selection, styled as buttons or tabs
+---
+
+The `ButtonGroup` component provides a set of mutually exclusive options displayed as buttons or tabs. Only one option can be selected at a time.
+
+## Basic Usage
+
+```svelte
+<ButtonGroup name="timeframe">
+  <ButtonGroupItem value="day" valueLabel="Daily" />
+  <ButtonGroupItem value="week" valueLabel="Weekly" />
+  <ButtonGroupItem value="month" valueLabel="Monthly" />
+</ButtonGroup>
+```
+
+## Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for the input. Used to reference the selected value using `{inputs.name}`
+</ParamField>
+
+<ParamField path="title" type="string">
+  Label displayed above the button group
+</ParamField>
+
+<ParamField path="data" type="Query">
+  Query result to populate button options. When provided, requires `value` and `label` props.
+</ParamField>
+
+<ParamField path="value" type="string">
+  Column name from query to use as the button value. Required when using `data` prop.
+</ParamField>
+
+<ParamField path="label" type="string">
+  Column name from query to use as the button label. Required when using `data` prop.
+</ParamField>
+
+<ParamField path="order" type="string">
+  SQL ORDER BY clause to sort buttons
+  
+  ```svelte
+  <ButtonGroup name="priority" data={priorities} value="id" label="name" order="name ASC" />
+  ```
+</ParamField>
+
+<ParamField path="where" type="string">
+  SQL WHERE clause to filter button options
+</ParamField>
+
+<ParamField path="defaultValue" type="string">
+  Initial value to select
+  
+  ```svelte
+  <ButtonGroup name="view" defaultValue="grid">
+    <ButtonGroupItem value="list" valueLabel="List" />
+    <ButtonGroupItem value="grid" valueLabel="Grid" />
+  </ButtonGroup>
+  ```
+</ParamField>
+
+<ParamField path="preset" type="'dates'">
+  Use a predefined set of options. Currently supports `"dates"` preset with values: "1 day", "1 week", "1 month", "3 months", "1 year", "all"
+  
+  ```svelte
+  <ButtonGroup name="period" preset="dates" />
+  ```
+</ParamField>
+
+<ParamField path="display" type="'buttons' | 'tabs'" default="buttons">
+  Visual style of the button group
+  - `buttons`: Compact button group with border
+  - `tabs`: Larger tab-style buttons with spacing
+</ParamField>
+
+<ParamField path="color" type="string" default="hsla(207, 65%, 39%, 1)">
+  Color for the active button state (accepts any CSS color value)
+</ParamField>
+
+<ParamField path="description" type="string">
+  Help text displayed as an info icon next to the title
+</ParamField>
+
+<ParamField path="hideDuringPrint" type="boolean" default="true">
+  Whether to hide the button group when printing
+</ParamField>
+
+## Static Options
+
+```svelte
+<ButtonGroup name="chartType" title="Chart Type">
+  <ButtonGroupItem value="bar" valueLabel="Bar Chart" />
+  <ButtonGroupItem value="line" valueLabel="Line Chart" />
+  <ButtonGroupItem value="area" valueLabel="Area Chart" />
+</ButtonGroup>
+```
+
+## Query-Based Options
+
+```svelte
+<script>
+  const statuses = Query.create(`
+    SELECT 
+      status_code as value,
+      status_name as label
+    FROM order_statuses
+    ORDER BY display_order
+  `);
+</script>
+
+<ButtonGroup 
+  name="orderStatus"
+  data={statuses}
+  value="value"
+  label="label"
+  title="Filter by Status"
+/>
+```
+
+## Display Styles
+
+### Button Style (Default)
+
+```svelte
+<ButtonGroup name="view" display="buttons">
+  <ButtonGroupItem value="table" valueLabel="Table" />
+  <ButtonGroupItem value="chart" valueLabel="Chart" />
+</ButtonGroup>
+```
+
+### Tab Style
+
+```svelte
+<ButtonGroup name="tab" display="tabs">
+  <ButtonGroupItem value="overview" valueLabel="Overview" />
+  <ButtonGroupItem value="details" valueLabel="Details" />
+  <ButtonGroupItem value="history" valueLabel="History" />
+</ButtonGroup>
+```
+
+## Using Presets
+
+The `dates` preset provides common time period options:
+
+```svelte
+<ButtonGroup name="timePeriod" preset="dates" title="Time Period" />
+```
+
+This creates buttons for: 1 day, 1 week, 1 month, 3 months, 1 year, and all time.
+
+## Using Selected Values
+
+Access the selected value in queries:
+
+```sql
+SELECT * 
+FROM sales 
+WHERE date >= current_date - INTERVAL {inputs.timePeriod}
+```
+
+## Input Store Structure
+
+The selected value is stored directly:
+
+```javascript
+// Single value (e.g., "week")
+inputs.timeframe // "week"
+
+// Can be used directly in queries
+// WHERE period = {inputs.timeframe}
+```
+
+## Examples
+
+### Chart Type Switcher
+
+```svelte
+<ButtonGroup name="chartType" title="Visualization">
+  <ButtonGroupItem value="bar" valueLabel="Bar" />
+  <ButtonGroupItem value="line" valueLabel="Line" />
+  <ButtonGroupItem value="scatter" valueLabel="Scatter" />
+</ButtonGroup>
+
+{#if inputs.chartType === 'bar'}
+  <BarChart data={salesData} />
+{:else if inputs.chartType === 'line'}
+  <LineChart data={salesData} />
+{:else}
+  <ScatterPlot data={salesData} />
+{/if}
+```
+
+### Time Period Filter
+
+```svelte
+<ButtonGroup name="period" preset="dates" defaultValue="1 month" />
+
+```sql time_filtered_sales
+SELECT 
+  date,
+  SUM(amount) as total
+FROM sales
+WHERE date >= current_date - INTERVAL {inputs.period}
+GROUP BY date
+ORDER BY date
+```
+
+<LineChart data={time_filtered_sales} />
+```
+
+### Mixed Static and Query Options
+
+```svelte
+<script>
+  const categories = Query.create(`SELECT DISTINCT category FROM products`);
+</script>
+
+<ButtonGroup name="filter" data={categories} value="category">
+  <ButtonGroupItem value="all" valueLabel="All Categories" />
+</ButtonGroup>
+```
+
+### Custom Styling
+
+```svelte
+<ButtonGroup 
+  name="status"
+  display="tabs"
+  color="#10b981"
+  title="Order Status"
+>
+  <ButtonGroupItem value="pending" valueLabel="Pending" />
+  <ButtonGroupItem value="shipped" valueLabel="Shipped" />
+  <ButtonGroupItem value="delivered" valueLabel="Delivered" />
+</ButtonGroup>
+```

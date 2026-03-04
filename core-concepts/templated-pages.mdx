@@ -1,0 +1,365 @@
+---
+title: Templated Pages
+description: Generate multiple pages from a single template using dynamic parameters
+---
+
+# Templated Pages
+
+Templated pages allow you to use a single markdown file as a template to generate many pages with different data. This is perfect for creating individual pages for customers, products, regions, or any other entity in your data.
+
+## Use Cases
+
+Templated pages are ideal for:
+
+- **Customer pages**: `customers/[customer_id].md` → One page per customer
+- **Product pages**: `products/[product].md` → One page per product  
+- **Regional reports**: `regions/[region].md` → One page per region
+- **Time-based reports**: `weekly-reports/week-[week_num].md` → One page per week
+- **Nested hierarchies**: `categories/[category]/[product].md` → Products grouped by category
+
+## Basic Example
+
+Create a file with square brackets in the name:
+
+```
+pages/
+  customers/
+    [customer_id].md
+```
+
+This creates a template that generates pages like:
+- `/customers/acme`
+- `/customers/contoso`  
+- `/customers/globex`
+
+## Quick Start with VS Code
+
+1. **Create a SQL file query** in your `queries/` folder that returns one row per page:
+
+   `queries/customers.sql`:
+   ```sql
+   SELECT 
+       customer_id,
+       customer_name,
+       total_revenue,
+       signup_date
+   FROM customers
+   ```
+
+2. **Run the command**: `Evidence: Create Templated Pages from Query` (Ctrl/Cmd+Shift+P)
+
+3. **Enter the unique ID column**: `customer_id`
+
+Evidence automatically creates:
+
+```
+pages/
+  customers/
+    [customer_id].md    # Template page
+    index.md            # Index with links to all customers
+```
+
+## Using Page Parameters
+
+The parameter in square brackets becomes a variable you can use in your page.
+
+### Accessing Parameters
+
+For a page at `/customers/acme`, the parameter value is `acme`:
+
+```markdown
+# Customer: {params.customer_id}
+```
+
+### Filtering Queries with Parameters
+
+````markdown
+```sql customer_orders
+SELECT 
+    order_date,
+    product,
+    amount
+FROM orders
+WHERE customer_id = '${params.customer_id}'
+ORDER BY order_date DESC
+```
+
+<DataTable data={customer_orders} />
+````
+
+### Using $page for Advanced Access
+
+Access parameters via the `$page` object:
+
+````markdown
+```sql customer_data
+SELECT * 
+FROM customers
+WHERE customer_id = '${$page.params.customer_id}'
+```
+
+# Details for {$page.params.customer_id}
+
+<LineChart 
+    data={customer_data.filter(d => d.customer_id?.toLowerCase() === $page.params.customer_id?.toLowerCase())}
+    x="month" 
+    y="revenue"
+/>
+````
+
+## Generating Page Links
+
+For templated pages to be built, they must be linked from somewhere in your app.
+
+### Option 1: DataTable with Links
+
+Create a link column in your query:
+
+````markdown
+```sql customers
+SELECT
+    customer_name,
+    '/customers/' || customer_id as customer_link,
+    total_revenue,
+    order_count
+FROM customers
+ORDER BY total_revenue DESC
+```
+
+<DataTable
+    data={customers}
+    link="customer_link"
+/>
+````
+
+Clicking a row navigates to that customer's page.
+
+### Option 2: Each Loop
+
+Generate a list of links programmatically:
+
+````markdown
+```sql customers
+SELECT
+    customer_id,
+    customer_name,
+    total_revenue
+FROM customers
+ORDER BY customer_name
+```
+
+{#each customers as customer}
+- [{customer.customer_name}](/customers/{customer.customer_id}) - Revenue: <Value data={customer} column="total_revenue" fmt="usd"/>
+{/each}
+````
+
+### Option 3: Manual Links
+
+Create explicit markdown links:
+
+```markdown
+- [Acme Corp](/customers/acme)
+- [Contoso Ltd](/customers/contoso)
+- [Globex Inc](/customers/globex)
+```
+
+## Complete Example
+
+### Index Page
+
+`pages/customers/index.md`:
+
+````markdown
+---
+title: All Customers
+---
+
+# Customer Directory
+
+```sql customers
+SELECT
+    customer_id,
+    customer_name,
+    '/customers/' || customer_id as link,
+    total_revenue,
+    signup_date
+FROM customers
+ORDER BY total_revenue DESC
+```
+
+<DataTable
+    data={customers}
+    link="link"
+    search="true"
+/>
+````
+
+### Templated Page
+
+`pages/customers/[customer_id].md`:
+
+````markdown
+---
+title: Customer Details
+---
+
+```sql customer_info
+SELECT 
+    customer_name,
+    signup_date,
+    total_revenue
+FROM customers
+WHERE customer_id = '${params.customer_id}'
+```
+
+```sql customer_orders
+SELECT 
+    DATE_TRUNC('month', order_date) as month,
+    SUM(amount) as monthly_revenue,
+    COUNT(*) as order_count
+FROM orders
+WHERE customer_id = '${params.customer_id}'
+GROUP BY month
+ORDER BY month
+```
+
+# {customer_info[0].customer_name}
+
+<Grid cols=3lt;Grid cols="3">
+    <BigValue 
+        data={customer_info}
+        value="total_revenue"
+        title="Total Revenue"
+        fmt="usd"
+    />
+    <BigValue 
+        data={customer_info}
+        value="signup_date"
+        title="Customer Since"
+    />
+    <BigValue 
+        data={customer_orders}
+        value="order_count"
+        title="Total Orders"
+        fmt="num0"
+    />
+</Grid>
+
+## Revenue Trend
+
+<LineChart
+    data={customer_orders}
+    x="month"
+    y="monthly_revenue"
+    yFmt="usd0k"
+/>
+
+## Order History
+
+<DataTable data={customer_orders} />
+````
+
+## Nesting Templated Pages
+
+Create hierarchical page structures:
+
+```
+pages/
+  regions/
+    [region]/
+      index.md              # /regions/west
+      [store_id].md         # /regions/west/store-123
+```
+
+`pages/regions/[region]/index.md`:
+
+````markdown
+```sql stores
+SELECT
+    store_id,
+    store_name,
+    '/regions/' || '${params.region}' || '/' || store_id as link
+FROM stores
+WHERE region = '${params.region}'
+```
+
+# Stores in {params.region}
+
+<DataTable data={stores} link="link" />
+````
+
+`pages/regions/[region]/[store_id].md`:
+
+````markdown
+```sql store_data
+SELECT *
+FROM stores
+WHERE region = '${params.region}'
+  AND store_id = '${params.store_id}'
+```
+
+# Store: {store_data[0].store_name}
+
+Region: {params.region}
+````
+
+## File vs Folder Syntax
+
+These are equivalent:
+
+**Option 1: File**
+```
+pages/customers/[customer_id].md
+```
+
+**Option 2: Folder**
+```
+pages/customers/[customer_id]/index.md
+```
+
+Use the folder syntax when you want to nest more pages under the parameter.
+
+## Dynamic Breadcrumbs
+
+Use frontmatter to show friendly breadcrumbs:
+
+```yaml
+---
+title: Customer Detail
+breadcrumb: "SELECT customer_name as breadcrumb FROM customers WHERE customer_id = '${params.customer_id}'"
+---
+```
+
+This displays the customer name in the breadcrumb instead of the ID.
+
+<Info>
+The breadcrumb query must return a column named `breadcrumb`.
+</Info>
+
+## Best Practices
+
+<Tip>
+**Performance**: Templated pages are pre-rendered at build time. Each page runs its queries independently, so avoid creating thousands of pages with heavy queries.
+</Tip>
+
+<Note>
+**URL encoding**: Parameters are URL-encoded. Use `.toLowerCase()` when comparing strings to handle case sensitivity.
+</Note>
+
+<Warning>
+**SQL injection**: Always wrap parameters in quotes in SQL queries: `WHERE id = '${params.id}'`
+</Warning>
+
+## When to Use Templated Pages vs. Loops
+
+**Use templated pages when:**
+- You need unique URLs for each entity
+- You want shareable links (e.g., email a customer their specific page)
+- You need SEO for individual pages
+- Each page has substantial unique content
+
+**Use loops when:**
+- Displaying all items on a single page is acceptable
+- You don't need unique URLs
+- You have fewer than ~20 items to display
+- See [Loops](/core-concepts/loops) for more information

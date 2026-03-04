@@ -1,0 +1,265 @@
+---
+title: Build Your First Evidence App
+description: A complete tutorial for creating your first Evidence analytics app from scratch
+---
+
+This guide walks you through building your first Evidence app, from installation to deployment. You'll create a sales dashboard using real data and Evidence's powerful features.
+
+<Steps>
+
+<Step title="Install Evidence">
+
+First, create a new Evidence project using npx:
+
+```bash
+npx degit evidence-dev/template my-first-app
+cd my-first-app
+npm install
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Your app will be available at `http://localhost:3000`.
+
+</Step>
+
+<Step title="Connect Your Data Source">
+
+Evidence supports multiple databases. For this tutorial, we'll use DuckDB (which comes preconfigured).
+
+Check your `sources/` directory. You should see a connection file:
+
+```yaml sources/my_database/connection.yaml
+name: my_database
+type: duckdb
+options:
+  filename: ./my_database.duckdb
+```
+
+This connection is automatically available to all your queries.
+
+</Step>
+
+<Step title="Write Your First Query">
+
+Create a file `queries/orders_by_month.sql`:
+
+```sql
+SELECT 
+  DATE_TRUNC('month', order_datetime) AS month,
+  SUM(sales) AS total_sales,
+  COUNT(*) AS num_orders,
+  SUM(sales) / COUNT(*) AS avg_order_value
+FROM orders
+GROUP BY DATE_TRUNC('month', order_datetime)
+ORDER BY month
+```
+
+Evidence will automatically run this query and make the results available to your pages.
+
+</Step>
+
+<Step title="Create Your First Page">
+
+Create `pages/index.md` to build your first dashboard:
+
+```
+---
+title: Sales Dashboard
+queries:
+  - orders_by_month: orders_by_month.sql
+---
+
+# Sales Dashboard
+
+Welcome to your first Evidence app! This dashboard shows sales performance over time.
+
+## Monthly Sales Trend
+
+<LineChart 
+  data={orders_by_month}
+  x="month"
+  y="total_sales"
+  yAxisTitle="Sales ($)"
+/>
+
+## Sales Summary
+
+<DataTable data={orders_by_month} />
+```
+
+</Step>
+
+<Step title="Add Key Metrics">
+
+Enhance your dashboard with summary metrics. Add this to your page:
+
+Add this markdown to your page:
+
+```
+## Key Metrics
+```
+
+Then add a SQL query:
+
+```sql summary
+SELECT 
+  SUM(total_sales) as total_revenue,
+  SUM(num_orders) as total_orders,
+  AVG(avg_order_value) as overall_aov
+FROM ${orders_by_month}
+```
+
+And display the results with BigValue components:
+
+```markdown
+<BigValue 
+  data={summary}
+  value="total_revenue"
+  title="Total Revenue"
+/>
+
+<BigValue 
+  data={summary}
+  value="total_orders"
+  title="Total Orders"
+/>
+
+<BigValue 
+  data={summary}
+  value="overall_aov"
+  title="Average Order Value"
+/>
+```
+
+The `{summary}` syntax references inline SQL queries defined with triple backticks.
+
+</Step>
+
+<Step title="Add Multiple Visualizations">
+
+Create more insights with different chart types:
+
+First create a SQL query:
+
+```sql orders_by_category
+SELECT 
+  category,
+  SUM(sales) as total_sales,
+  COUNT(*) as num_orders
+FROM orders
+GROUP BY category
+ORDER BY total_sales DESC
+```
+
+Then add a chart:
+
+```markdown
+## Sales by Category
+
+<BarChart 
+  data={orders_by_category}
+  x="category"
+  y="total_sales"
+  swapXY="true"
+  sort="true"
+/>
+```
+
+Evidence supports many chart types:
+- `<LineChart>` - Time series and trends
+- `<BarChart>` - Comparisons across categories
+- `<AreaChart>` - Cumulative values
+- `<ScatterPlot>` - Correlations
+- And many more!
+
+</Step>
+
+<Step title="Test Your App">
+
+Your development server automatically refreshes as you make changes. Visit `http://localhost:3000` to see your dashboard.
+
+Evidence provides:
+- **Live reload** - Changes appear instantly
+- **Query preview** - See query results as you write
+- **Error messages** - Clear feedback when something's wrong
+
+</Step>
+
+</Steps>
+
+## Next Steps
+
+Now that you've built your first app, explore these features:
+
+- [Connect different data sources](/guides/connecting-data) - PostgreSQL, Snowflake, BigQuery, and more
+- [Create interactive charts](/guides/creating-charts) - Advanced visualizations and customization
+- [Build templated pages](/guides/templating) - Dynamic pages for categories, products, or users
+- [Customize styling](/guides/styling) - Match your brand with custom CSS
+
+## Common Patterns
+
+### Using Markdown for Context
+
+Evidence pages are markdown files, so you can add rich text alongside your data:
+
+```markdown
+Our sales **increased 23%** this quarter, driven primarily by the _Sinister Toys_ category.
+
+Key findings:
+- New customer acquisition up 15%
+- Repeat purchase rate improved to 34%
+- Average order value: <Value data={summary} column="overall_aov" fmt="usd2" />
+```
+
+### Filtering Data
+
+Use JavaScript to filter your query results:
+
+```markdown
+<BarChart 
+  data={orders_by_category.filter(d => d.total_sales > 10000)}
+  x="category"
+  y="total_sales"
+/>
+```
+
+### Combining Queries
+
+Reference one query from another using `${query_name}`:
+
+```sql
+SELECT 
+  category,
+  total_sales,
+  total_sales / (SELECT SUM(total_sales) FROM ${orders_by_category}) as pct_of_total
+FROM ${orders_by_category}
+```
+
+## Troubleshooting
+
+### Query Not Found
+
+Make sure your query file is in the `queries/` directory and referenced in your page's frontmatter:
+
+```yaml
+---
+queries:
+  - my_query: my_query.sql
+---
+```
+
+### Data Not Showing
+
+Check the browser console for errors. Common issues:
+- Column names are case-sensitive
+- Query returned no rows
+- Database connection issue
+
+### Styling Issues
+
+Ensure your custom CSS is in `src/app.css` and properly imported in your layout file.

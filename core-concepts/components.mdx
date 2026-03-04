@@ -1,0 +1,379 @@
+---
+title: Components
+description: Use Evidence's built-in components to visualize data and build interactive reports
+---
+
+# Components
+
+Evidence includes a comprehensive component library for creating charts, tables, inputs, and UI elements. Components use HTML-like syntax and connect directly to your query results.
+
+## Component Basics
+
+Components use angle brackets with props to configure behavior and appearance:
+
+```markdown
+<BarChart
+    data={orders_by_month}
+    x="order_month"
+    y="sales"
+    title="Monthly Sales"
+/>
+```
+
+### Anatomy of a Component
+
+- **Component name**: `BarChart`, `DataTable`, `Value`, etc.
+- **Props**: Configuration options like `data`, `x`, `y`, `title`
+- **Self-closing**: Most components use `/>`
+- **Nested**: Some components have children (see below)
+
+## Displaying Values in Text
+
+The `Value` component displays a single value inline:
+
+````markdown
+```sql revenue
+SELECT 1250000 as total_revenue
+```
+
+We generated <Value data={revenue} column="total_revenue" fmt="usd"/> in revenue last quarter.
+````
+
+Output: "We generated $1,250,000 in revenue last quarter."
+
+### Value Component Props
+
+```markdown
+<Value 
+    data={query_name}
+    column="column_name"
+    row=0
+    fmt="usd"
+/>
+```
+
+- `data`: Query result to pull from
+- `column`: Column name to display (optional if only one column)
+- `row`: Row index (default: 0)
+- `fmt`: Format type (usd, pct, num0, etc.)
+
+## Chart Components
+
+Evidence provides a full suite of chart components with sensible defaults.
+
+### Bar Charts
+
+````markdown
+```sql sales_by_category
+SELECT 
+    category,
+    SUM(sales) as total_sales
+FROM needful_things.orders
+GROUP BY category
+ORDER BY total_sales DESC
+```
+
+<BarChart
+    data={sales_by_category}
+    x="category"
+    y="total_sales"
+    title="Sales by Category"
+    yAxisTitle="Total Sales ($)"
+/>
+````
+
+### Line Charts
+
+````markdown
+```sql sales_trend
+SELECT 
+    DATE_TRUNC('month', order_date) as month,
+    SUM(sales) as sales
+FROM needful_things.orders
+GROUP BY month
+ORDER BY month
+```
+
+<LineChart
+    data={sales_trend}
+    x="month"
+    y="sales"
+    yFmt="usd0k"
+    title="Sales Trend"
+/>
+````
+
+### Multi-Series Charts
+
+Add a `series` prop to break data into multiple lines or bars:
+
+````markdown
+```sql sales_by_region
+SELECT 
+    month,
+    region,
+    SUM(sales) as sales
+FROM needful_things.orders
+GROUP BY month, region
+```
+
+<LineChart
+    data={sales_by_region}
+    x="month"
+    y="sales"
+    series="region"
+/>
+````
+
+## Data Tables
+
+Display query results in interactive tables:
+
+````markdown
+```sql top_customers
+SELECT 
+    customer_name,
+    COUNT(*) as orders,
+    SUM(sales) as total_sales,
+    AVG(sales) as avg_order_value
+FROM needful_things.orders
+GROUP BY customer_name
+ORDER BY total_sales DESC
+LIMIT 20
+```
+
+<DataTable 
+    data={top_customers}
+    search="true"
+    rows=10
+/>
+````
+
+### Column Formatting
+
+Customize individual columns:
+
+```markdown
+<DataTable data={top_customers}>
+    <Column id=customer_namelt;Column id="customer_name" />
+    <Column id=orderslt;Column id="orders" fmt="num0" />
+    <Column id=total_saleslt;Column id="total_sales" fmt="usd" contentType=bar />
+    <Column id=avg_order_valuelt;Column id="avg_order_value" fmt="usd2" contentType=colorscale />
+</DataTable>
+```
+
+## Input Components
+
+Create interactive filters and controls:
+
+### Dropdown
+
+````markdown
+```sql categories
+SELECT DISTINCT category 
+FROM needful_things.orders
+ORDER BY category
+```
+
+<Dropdown 
+    name="category_filter"
+    data={categories}
+    value="category"
+    title="Select Category"
+/>
+
+```sql filtered_orders
+SELECT *
+FROM needful_things.orders
+WHERE category = '${inputs.category_filter.value}'
+```
+
+<DataTable data={filtered_orders} />
+````
+
+### Date Range
+
+```markdown
+<DateRange 
+    name="date_range"
+    start=2024-01-01
+    end=2024-12-31
+/>
+
+```sql filtered_by_date
+SELECT *
+FROM orders
+WHERE order_date BETWEEN '${inputs.date_range.start}' 
+  AND '${inputs.date_range.end}'
+```
+```
+
+### Text Input
+
+```markdown
+<TextInput 
+    name="search_term"
+    placeholder="Search products..."
+/>
+```
+
+## UI Components
+
+Enhance your reports with callouts, tabs, accordions, and more.
+
+### Callouts
+
+```markdown
+<Note>
+This is informational content that helps explain the data.
+</Note>
+
+<Info>
+Important information users should be aware of.
+</Info>
+
+<Warning>
+Something that requires caution or attention.
+</Warning>
+
+<Tip>
+A helpful suggestion or best practice.
+</Tip>
+```
+
+### Tabs
+
+```markdown
+<Tabs>
+    <Tab label="Sales">
+        <BarChart data={sales} x="month" y="revenue" />
+    </Tab>
+    <Tab label="Orders">
+        <LineChart data={orders} x="month" y="count" />
+    </Tab>
+    <Tab label="Customers">
+        <DataTable data={customers} />
+    </Tab>
+</Tabs>
+```
+
+### Accordion
+
+````markdown
+```sql categories
+SELECT DISTINCT category 
+FROM needful_things.orders
+```
+
+<Accordion>
+{#each categories as cat}
+    <AccordionItem title={cat.category}>
+        Details about {cat.category} category.
+    </AccordionItem>
+{/each}
+</Accordion>
+````
+
+### Grid Layout
+
+```markdown
+<Grid cols=2lt;Grid cols="2">
+    <div>
+        <BigValue data={revenue} value="total" fmt="usd" />
+    </div>
+    <div>
+        <BigValue data={orders} value="count" fmt="num0" />
+    </div>
+</Grid>
+```
+
+## Chart Annotations
+
+Add reference lines and areas to charts:
+
+````markdown
+```sql target_data
+SELECT 50000 as sales_target
+```
+
+<LineChart data={sales} x="month" y="revenue>"
+    <ReferenceLine 
+        data={target_data}
+        y="sales_target"
+        label="Target"
+        color="red"
+    />
+</LineChart>
+````
+
+## Component Props and Defaults
+
+### Data Prop
+
+All data components require a `data` prop:
+
+```markdown
+<BarChart data={query_name} />
+```
+
+### X and Y Axes
+
+For Cartesian charts:
+
+```markdown
+<LineChart
+    data={sales}
+    x="date"          # Column for x-axis
+    y="revenue"       # Column for y-axis (or array: y={["revenue", "profit"]})
+/>
+```
+
+<Info>
+**Smart Defaults**: If you don't specify `x`, Evidence uses the first column. If you don't specify `y`, Evidence uses all numeric columns.
+</Info>
+
+### Common Props
+
+```markdown
+title="Chart Title"
+subtitle="Additional context"
+xAxisTitle="X Axis Label"
+yAxisTitle="Y Axis Label"
+chartAreaHeight=400
+labels="true"
+colorPalette={['#4338ca', '#06b6d4', '#10b981']}
+```
+
+## Available Component Categories
+
+**Charts**
+- BarChart, LineChart, AreaChart
+- ScatterPlot, BubbleChart
+- Histogram, BoxPlot
+- FunnelChart, SankeyDiagram
+- CalendarHeatmap
+
+**Data Display**
+- DataTable
+- Value, BigValue, Delta
+
+**Inputs**
+- Dropdown, ButtonGroup
+- DateRange, TextInput, Slider
+- DimensionGrid
+
+**Maps**
+- USMap, AreaMap, PointMap, BubbleMap
+
+**UI Elements**
+- Tabs, Accordion, Modal, Details
+- Alert, Grid
+- DownloadData, LastRefreshed
+
+<Tip>
+Explore the complete [component library](/components) for detailed documentation on each component.
+</Tip>
+
+## Custom Components
+
+You can build your own reusable components using Svelte. See the [Custom Components guide](/components/custom) for details on creating custom data visualizations and UI elements.

@@ -1,0 +1,302 @@
+---
+title: BoxPlot
+description: Display statistical distributions using box-and-whisker diagrams
+---
+
+# BoxPlot
+
+The `BoxPlot` component visualizes statistical distributions using box-and-whisker diagrams, showing the median, quartiles, and outliers. It's ideal for comparing distributions across categories.
+
+## Props
+
+### Data Props
+
+<ParamField path="data" type="Query | array" required>
+  Query result or array of objects containing the data to visualize
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  Column name for category labels (x-axis)
+</ParamField>
+
+<ParamField path="min" type="string" required>
+  Column name containing minimum values (lower whisker)
+</ParamField>
+
+<ParamField path="intervalBottom" type="string" required>
+  Column name containing lower quartile (Q1) values
+</ParamField>
+
+<ParamField path="midpoint" type="string" required>
+  Column name containing median values
+</ParamField>
+
+<ParamField path="intervalTop" type="string" required>
+  Column name containing upper quartile (Q3) values
+</ParamField>
+
+<ParamField path="max" type="string" required>
+  Column name containing maximum values (upper whisker)
+</ParamField>
+
+<ParamField path="confidenceInterval" type="string">
+  Column name for confidence interval data
+</ParamField>
+
+### Style Props
+
+<ParamField path="color" type="string">
+  Color for the box plot (hex, rgb, or theme color name)
+</ParamField>
+
+### Formatting Props
+
+<ParamField path="xFmt" type="string">
+  Format string for x-axis (category) values
+</ParamField>
+
+<ParamField path="yFmt" type="string">
+  Format string for y-axis (numeric) values
+</ParamField>
+
+### Chart Layout Props
+
+<ParamField path="title" type="string">
+  Chart title displayed at the top
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  Chart subtitle displayed below the title
+</ParamField>
+
+<ParamField path="legend" type="boolean">
+  Whether to show the legend
+</ParamField>
+
+<ParamField path="chartAreaHeight" type="number">
+  Height of the chart area in pixels
+</ParamField>
+
+### Orientation Props
+
+<ParamField path="swapXY" type="boolean" default={false}>
+  Swap axes to create horizontal box plots
+</ParamField>
+
+### Axis Props
+
+<ParamField path="xAxisTitle" type="string | boolean">
+  Title for x-axis. Use `true` to use column name
+</ParamField>
+
+<ParamField path="yAxisTitle" type="string | boolean">
+  Title for y-axis. Use `true` to use column name
+</ParamField>
+
+<ParamField path="xGridlines" type="boolean">
+  Show vertical gridlines
+</ParamField>
+
+<ParamField path="yGridlines" type="boolean">
+  Show horizontal gridlines
+</ParamField>
+
+<ParamField path="xAxisLabels" type="boolean">
+  Show labels on x-axis
+</ParamField>
+
+<ParamField path="yAxisLabels" type="boolean">
+  Show labels on y-axis
+</ParamField>
+
+<ParamField path="xBaseline" type="boolean">
+  Show x-axis baseline
+</ParamField>
+
+<ParamField path="yBaseline" type="boolean">
+  Show y-axis baseline
+</ParamField>
+
+<ParamField path="xTickMarks" type="boolean">
+  Show tick marks on x-axis
+</ParamField>
+
+<ParamField path="yTickMarks" type="boolean">
+  Show tick marks on y-axis
+</ParamField>
+
+### Axis Scale Props
+
+<ParamField path="xType" type="string">
+  Type of x-axis: 'category' | 'time' | 'value'
+</ParamField>
+
+<ParamField path="yLog" type="boolean">
+  Use logarithmic scale for y-axis
+</ParamField>
+
+<ParamField path="yLogBase" type="number">
+  Base for logarithmic y-axis
+</ParamField>
+
+<ParamField path="yMin" type="number">
+  Minimum value for y-axis
+</ParamField>
+
+<ParamField path="yMax" type="number">
+  Maximum value for y-axis
+</ParamField>
+
+### Series Props
+
+<ParamField path="series" type="string">
+  Column name to group data into multiple series
+</ParamField>
+
+<ParamField path="seriesColors" type="object">
+  Object mapping series names to colors
+</ParamField>
+
+### Behavior Props
+
+<ParamField path="connectGroup" type="string">
+  Connect charts for synchronized interactions
+</ParamField>
+
+### Advanced Props
+
+<ParamField path="echartsOptions" type="object">
+  Custom ECharts configuration object
+</ParamField>
+
+<ParamField path="seriesOptions" type="object">
+  Custom series configuration
+</ParamField>
+
+<ParamField path="printEchartsConfig" type="boolean" default={false}>
+  Print ECharts config to console
+</ParamField>
+
+<ParamField path="renderer" type="string">
+  Renderer type: 'canvas' | 'svg'
+</ParamField>
+
+<ParamField path="downloadableData" type="boolean">
+  Enable data download
+</ParamField>
+
+<ParamField path="downloadableImage" type="boolean">
+  Enable image download
+</ParamField>
+
+<ParamField path="emptySet" type="string">
+  Empty data behavior: 'pass' | 'warn' | 'error'
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom empty data message
+</ParamField>
+
+<ParamField path="leftPadding" type="number">
+  Left padding for chart area
+</ParamField>
+
+<ParamField path="rightPadding" type="number">
+  Right padding for chart area
+</ParamField>
+
+<ParamField path="xLabelWrap" type="boolean">
+  Wrap x-axis labels
+</ParamField>
+
+## Examples
+
+### Basic Box Plot
+
+```markdown
+```sql response_time_stats
+select 
+  endpoint,
+  min(response_time) as min_time,
+  percentile_cont(0.25) within group (order by response_time) as q1,
+  median(response_time) as median_time,
+  percentile_cont(0.75) within group (order by response_time) as q3,
+  max(response_time) as max_time
+from api_logs
+group by endpoint
+```
+
+<BoxPlot 
+  data={response_time_stats} 
+  name="endpoint"
+  min="min_time"
+  intervalBottom="q1"
+  midpoint="median_time"
+  intervalTop="q3"
+  max="max_time"
+/>
+```
+
+### Horizontal Box Plot
+
+```markdown
+<BoxPlot 
+  data={response_time_stats} 
+  name="endpoint"
+  min="min_time"
+  intervalBottom="q1"
+  midpoint="median_time"
+  intervalTop="q3"
+  max="max_time"
+  swapXY="true"
+  title="API Response Times by Endpoint"
+/>
+```
+
+### Customized Box Plot
+
+```markdown
+<BoxPlot 
+  data={response_time_stats} 
+  name="endpoint"
+  min="min_time"
+  intervalBottom="q1"
+  midpoint="median_time"
+  intervalTop="q3"
+  max="max_time"
+  color="primary"
+  yFmt="#,##0"
+  title="Response Time Distribution"
+  yAxisTitle="Time (ms)"
+  yGridlines="true"
+/>
+```
+
+### Box Plot with Custom Height
+
+```markdown
+```sql salary_by_department
+select 
+  department,
+  min(salary) as min_sal,
+  percentile_cont(0.25) within group (order by salary) as q1_sal,
+  median(salary) as median_sal,
+  percentile_cont(0.75) within group (order by salary) as q3_sal,
+  max(salary) as max_sal
+from employees
+group by department
+```
+
+<BoxPlot 
+  data={salary_by_department} 
+  name="department"
+  min="min_sal"
+  intervalBottom="q1_sal"
+  midpoint="median_sal"
+  intervalTop="q3_sal"
+  max="max_sal"
+  chartAreaHeight="400"
+  yFmt="usd0"
+  title="Salary Distribution by Department"
+/>
+```

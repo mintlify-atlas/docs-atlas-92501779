@@ -1,0 +1,193 @@
+---
+title: Sparkline
+description: Display compact inline charts for showing trends in a small space
+---
+
+# Sparkline
+
+The `Sparkline` component creates compact, inline charts perfect for displaying trends within text, tables, or dashboards. They're designed to show patterns and changes without axis labels or detailed annotations.
+
+## Props
+
+### Data Props
+
+<ParamField path="data" type="Query | array" required>
+  Query result or array of objects containing the data to visualize
+</ParamField>
+
+<ParamField path="dateCol" type="string" required>
+  Column name containing date/time values for the x-axis
+</ParamField>
+
+<ParamField path="valueCol" type="string" required>
+  Column name containing numeric values for the y-axis
+</ParamField>
+
+### Chart Type Props
+
+<ParamField path="type" type="string" default="line">
+  Sparkline type: 'line' | 'area' | 'bar'
+</ParamField>
+
+### Formatting Props
+
+<ParamField path="valueFmt" type="string">
+  Format string for values in tooltip
+</ParamField>
+
+<ParamField path="dateFmt" type="string">
+  Format string for dates in tooltip
+</ParamField>
+
+### Size Props
+
+<ParamField path="width" type="number" default={50}>
+  Width of the sparkline in pixels
+</ParamField>
+
+<ParamField path="height" type="number" default={15}>
+  Height of the sparkline in pixels
+</ParamField>
+
+### Style Props
+
+<ParamField path="color" type="string">
+  Color for the sparkline (hex, rgb, or theme color name)
+</ParamField>
+
+### Scale Props
+
+<ParamField path="yScale" type="boolean" default={false}>
+  Scale y-axis to data range (true) or start from zero (false)
+</ParamField>
+
+### Interaction Props
+
+<ParamField path="interactive" type="boolean" default={true}>
+  Enable interactive tooltips and hover effects
+</ParamField>
+
+<ParamField path="connectGroup" type="string">
+  Connect multiple sparklines for synchronized tooltips with the same group name
+</ParamField>
+
+### Advanced Props
+
+<ParamField path="emptySet" type="string">
+  Empty data behavior: 'pass' | 'warn' | 'error'
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom empty data message
+</ParamField>
+
+## Examples
+
+### Basic Line Sparkline
+
+```markdown
+```sql daily_revenue
+select date, revenue
+from sales
+where date >= current_date - 30
+order by date
+```
+
+Revenue trend: <Sparkline data={daily_revenue} dateCol="date" valueCol="revenue" />
+```
+
+### Area Sparkline
+
+```markdown
+<Sparkline 
+  data={daily_revenue} 
+  dateCol="date"
+  valueCol="revenue"
+  type="area"
+  color="primary"
+/>
+```
+
+### Bar Sparkline
+
+```markdown
+<Sparkline 
+  data={daily_orders} 
+  dateCol="date"
+  valueCol="order_count"
+  type="bar"
+  width=80
+  height=20
+/>
+```
+
+### Custom Size and Color
+
+```markdown
+<Sparkline 
+  data={daily_revenue} 
+  dateCol="date"
+  valueCol="revenue"
+  width=100
+  height=30
+  color="#4F46E5"
+  valueFmt="usd0k"
+/>
+```
+
+### Scaled to Data Range
+
+```markdown
+<Sparkline 
+  data={stock_prices} 
+  dateCol="date"
+  valueCol="close_price"
+  yScale="true"
+  type="line"
+  color="green"
+/>
+```
+
+### Non-Interactive (Static)
+
+```markdown
+<Sparkline 
+  data={daily_revenue} 
+  dateCol="date"
+  valueCol="revenue"
+  interactive="false"
+/>
+```
+
+### In a Table
+
+```markdown
+```sql product_trends
+select 
+  product_name,
+  current_revenue,
+  array_agg(struct(date, revenue)) as trend_data
+from daily_product_sales
+group by product_name, current_revenue
+```
+
+| Product | Revenue | Trend |
+|---------|---------|-------|
+| {product_name} | {current_revenue} | <Sparkline data={trend_data} dateCol="date" valueCol="revenue" width="60" height="20" /> |
+```
+
+### Connected Sparklines
+
+```markdown
+```sql metrics
+select date, revenue, orders, customers from daily_metrics
+```
+
+<div>
+  Revenue: <Sparkline data={metrics} dateCol="date" valueCol="revenue" connectGroup="metrics" />
+  Orders: <Sparkline data={metrics} dateCol="date" valueCol="orders" connectGroup="metrics" />
+  Customers: <Sparkline data={metrics} dateCol="date" valueCol="customers" connectGroup="metrics" />
+</div>
+```
+
+When hovering over any sparkline in the group, all three will show synchronized tooltips.

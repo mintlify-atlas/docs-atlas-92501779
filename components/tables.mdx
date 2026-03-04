@@ -1,0 +1,351 @@
+---
+title: Table Components
+description: Display and explore data with DataTable, Column formatting, aggregations, and interactive features
+---
+
+Evidence's table components provide powerful ways to display, explore, and interact with your data.
+
+## DataTable
+
+The DataTable component is the primary way to display tabular data in Evidence.
+
+### Basic DataTable
+
+```markdown
+```sql orders_by_category
+SELECT 
+  category,
+  DATE_TRUNC('month', order_date) as month,
+  SUM(sales) as total_sales,
+  COUNT(*) as num_orders,
+  AVG(sales) as avg_order_value
+FROM orders
+GROUP BY category, month
+ORDER BY month DESC
+```
+
+<DataTable data={orders_by_category}/>
+```
+
+Evidence automatically:
+- Detects column types
+- Formats numbers and dates
+- Adds sorting to all columns
+- Makes the table responsive
+
+### Interactive Features
+
+#### Search
+
+Add fuzzy search across all columns:
+
+```markdown
+<DataTable data={orders_by_category} search="true"/>
+```
+
+#### Row Numbers
+
+```markdown
+<DataTable data={orders_by_category} rowNumbers=true/>
+```
+
+#### Compact Mode
+
+Reduce padding for denser tables:
+
+```markdown
+<DataTable data={orders_by_category} compact="true"/>
+```
+
+#### Row Lines
+
+Add horizontal lines between rows:
+
+```markdown
+<DataTable data={orders_by_category} rowLines=true/>
+```
+
+#### Pagination
+
+Control number of rows displayed:
+
+```markdown
+<DataTable data={orders_by_category} rows=40/>
+```
+
+### Column Component
+
+Use the Column component to customize individual columns:
+
+```markdown
+<DataTable data={orders_by_category}>
+  <Column id="category"/>
+  <Column id="month"/>
+  <Column id="total_sales" fmt="usd" contentType=colorscale/>
+  <Column id="num_orders"/>
+  <Column id="avg_order_value" fmt="usd2" contentType=bar/>
+</DataTable>
+```
+
+### Column Props
+
+<ParamField path="id" type="string" required>
+  Column name from the query
+</ParamField>
+
+<ParamField path="title" type="string">
+  Display name for the column header
+</ParamField>
+
+<ParamField path="fmt" type="string">
+  Format specification (usd, eur, pct, num0, num2, etc.)
+</ParamField>
+
+<ParamField path="contentType" type="string">
+  Visualization type: colorscale, bar, sparkline, sparkbar, sparkarea, delta
+</ParamField>
+
+<ParamField path="align" type="'left' | 'center' | 'right'">
+  Text alignment
+</ParamField>
+
+<ParamField path="wrap" type="boolean" default="false">
+  Enable text wrapping
+</ParamField>
+
+### Content Types
+
+#### Color Scale
+
+Color cells based on value:
+
+```markdown
+<DataTable data={summary}>
+  <Column id="category"/>
+  <Column id="sales" fmt="usd0k" contentType=colorscale colorScale={['#304a8a','#e8efff']}/>
+  <Column id="orders"/>
+  <Column id="aov" fmt="usd2" contentType=colorscale colorScale={['#b52626','#FFFFFF','#2e9939']}/>
+</DataTable>
+```
+
+#### Bar Visualization
+
+Show values as horizontal bars:
+
+```markdown
+<DataTable data={summary}>
+  <Column id="category"/>
+  <Column id="sales" contentType=bar fmt="usd" align="left"/>
+  <Column id="orders"/>
+</DataTable>
+```
+
+#### Sparklines
+
+Display mini charts in table cells:
+
+```markdown
+```sql category_trends
+SELECT 
+  category,
+  SUM(monthly_sales) as total_sales,
+  ARRAY_AGG({'date': date, 'sales': monthly_sales}) AS sales
+FROM monthly_sales
+GROUP BY category
+```
+
+<DataTable data={category_trends}>
+  <Column id="category"/>
+  <Column id="total_sales" fmt="usd" contentType="bar" align="left"/>
+  <Column id="sales" contentType="sparkline" sparkX="date" sparkY="sales" sparkYScale="false"/>
+  <Column id="sales" contentType="sparkbar" sparkX="date" sparkY="sales"/>
+  <Column id="sales" contentType="sparkarea" sparkX="date" sparkY="sales" sparkColor="red"/>
+</DataTable>
+```
+
+### Conditional Formatting
+
+Use conditional logic to format cells:
+
+```markdown
+<DataTable data={summary}>
+  <Column id="category"/>
+  {#if inputs.display_column.value === 'sales'}
+    <Column id="sales" fmt="usd0k" contentType=colorscale colorScale={['#304a8a','#e8efff']}/>
+  {:else if inputs.display_column.value === 'orders'}
+    <Column id="orders"/>
+  {:else}
+    <Column id="aov" fmt="usd2" contentType=colorscale colorScale={['#b52626','#FFFFFF','#2e9939']}/>
+  {/if}
+</DataTable>
+```
+
+### Table Groups
+
+Group rows by column values:
+
+```markdown
+<DataTable data={orders}>
+  <Column id="category" totalAgg=countDistinct/>
+  <Column id="month"/>
+  <Column id="sales" totalAgg=sum fmt="usd"/>
+  <Column id="orders" totalAgg=sum/>
+</DataTable>
+```
+
+### Total Rows
+
+Add aggregated totals:
+
+```markdown
+<DataTable data={orders} totalRow=true>
+  <Column id="category" totalAgg=countDistinct/>
+  <Column id="sales" totalAgg=sum fmt="usd"/>
+  <Column id="orders" totalAgg=sum/>
+  <Column id="avg_order_value" totalAgg=mean fmt="usd2"/>
+</DataTable>
+```
+
+Available aggregations:
+- `sum` - Sum of values
+- `mean` - Average
+- `count` - Count of rows
+- `countDistinct` - Count of unique values
+- `min` - Minimum value
+- `max` - Maximum value
+
+## DataTable Props
+
+<ParamField path="data" type="QueryResult" required>
+  Query result to display
+</ParamField>
+
+<ParamField path="search" type="boolean" default="false">
+  Enable search box
+</ParamField>
+
+<ParamField path="rowNumbers" type="boolean" default="false">
+  Show row numbers
+</ParamField>
+
+<ParamField path="compact" type="boolean" default="false">
+  Use compact spacing
+</ParamField>
+
+<ParamField path="rowLines" type="boolean" default="false">
+  Show lines between rows
+</ParamField>
+
+<ParamField path="rows" type="number" default="10">
+  Rows per page
+</ParamField>
+
+<ParamField path="totalRow" type="boolean" default="false">
+  Show total row
+</ParamField>
+
+<ParamField path="groupBy" type="string">
+  Column to group by
+</ParamField>
+
+<ParamField path="downloadable" type="boolean" default="true">
+  Enable download button
+</ParamField>
+
+## Advanced Features
+
+### Column Groups
+
+Organize columns into groups:
+
+```markdown
+<DataTable data={financial_data}>
+  <ColumnGroup title="Revenue">
+    <Column id="gross_revenue" fmt="usd"/>
+    <Column id="net_revenue" fmt="usd"/>
+  </ColumnGroup>
+  <ColumnGroup title="Costs">
+    <Column id="cogs" fmt="usd"/>
+    <Column id="operating_expenses" fmt="usd"/>
+  </ColumnGroup>
+</DataTable>
+```
+
+### Text Wrapping
+
+Enable text wrapping for long content:
+
+```markdown
+<DataTable data={comments} wrapText=true>
+  <Column id="author"/>
+  <Column id="comment" wrap="true"/>
+  <Column id="date"/>
+</DataTable>
+```
+
+### Initially Filtered
+
+Show filtered data by default:
+
+```markdown
+```sql all_orders
+SELECT * FROM orders
+```
+
+<DataTable data={all_orders.filter(d => d.status === 'completed')}/>
+```
+
+## Markdown Tables
+
+For simple tables, you can use standard Markdown syntax:
+
+```markdown
+| Product | Q1 Sales | Q2 Sales | Q3 Sales |
+|---------|----------|----------|----------|
+| Widget  | $10,000  | $12,000  | $15,000  |
+| Gadget  | $8,000   | $9,000   | $11,000  |
+| Doohickey | $5,000 | $6,000   | $7,500   |
+```
+
+## Pivot Tables
+
+Create pivot tables using SQL:
+
+```sql pivot_data
+SELECT 
+  category,
+  SUM(CASE WHEN YEAR(order_date) = 2021 THEN sales END) as sales_2021,
+  SUM(CASE WHEN YEAR(order_date) = 2022 THEN sales END) as sales_2022,
+  SUM(CASE WHEN YEAR(order_date) = 2023 THEN sales END) as sales_2023
+FROM orders
+GROUP BY category
+```
+
+```markdown
+<DataTable data={pivot_data}>
+  <Column id="category"/>
+  <Column id="sales_2021" fmt="usd"/>
+  <Column id="sales_2022" fmt="usd"/>
+  <Column id="sales_2023" fmt="usd"/>
+</DataTable>
+```
+
+## Best Practices
+
+1. **Limit columns** - Too many columns make tables hard to read
+2. **Use formatting** - Apply appropriate formats (currency, percentages)
+3. **Add search** - For tables with many rows
+4. **Use content types** - Visualize data with bars, sparklines, and color scales
+5. **Consider pagination** - Set appropriate row limits
+6. **Add context** - Use column titles and tooltips
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Charts" icon="chart-bar" href="/components/charts">
+    Visualize data with charts
+  </Card>
+  <Card title="Text & Layout" icon="align-left" href="/components/text-and-layout">
+    Format and organize content
+  </Card>
+</CardGroup>

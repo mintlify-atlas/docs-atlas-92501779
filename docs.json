@@ -1,122 +1,182 @@
 {
   "$schema": "https://mintlify.com/docs.json",
+  "name": "Evidence",
   "theme": "mint",
-  "name": "Mint Starter Kit",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#14B8A6",
+    "light": "#5EEAD4",
+    "dark": "#0F766E"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/evidence-dev/evidence"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/evidence-dev/evidence"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "core-concepts/data-sources",
+              "core-concepts/queries",
+              "core-concepts/components",
+              "core-concepts/templated-pages",
+              "core-concepts/loops-and-conditionals",
+              "core-concepts/markdown"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Data Sources",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "data-sources/overview",
+              "data-sources/bigquery",
+              "data-sources/snowflake",
+              "data-sources/postgres",
+              "data-sources/redshift",
+              "data-sources/duckdb",
+              "data-sources/motherduck",
+              "data-sources/mysql",
+              "data-sources/mssql",
+              "data-sources/sqlite",
+              "data-sources/databricks",
+              "data-sources/trino",
+              "data-sources/csv"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Components",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "components/overview",
+              "components/charts",
+              "components/tables",
+              "components/text-and-layout",
+              "components/inputs",
+              "components/custom-components"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/overview",
+              "deployment/netlify",
+              "deployment/vercel",
+              "deployment/docker",
+              "deployment/static-hosting"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/build-first-app",
+              "guides/connecting-data",
+              "guides/creating-charts",
+              "guides/templating",
+              "guides/styling"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Components",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Chart Components",
             "pages": [
-              "api-reference/introduction"
+              "api/charts/line-chart",
+              "api/charts/bar-chart",
+              "api/charts/area-chart",
+              "api/charts/scatter-plot",
+              "api/charts/bubble-chart",
+              "api/charts/histogram",
+              "api/charts/box-plot",
+              "api/charts/heatmap",
+              "api/charts/sankey",
+              "api/charts/funnel-chart",
+              "api/charts/sparkline"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Data Display",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/data/data-table",
+              "api/data/value",
+              "api/data/big-value",
+              "api/data/delta"
+            ]
+          },
+          {
+            "group": "Input Components",
+            "pages": [
+              "api/inputs/dropdown",
+              "api/inputs/button-group",
+              "api/inputs/checkbox",
+              "api/inputs/date-range",
+              "api/inputs/text-input"
+            ]
+          },
+          {
+            "group": "Layout Components",
+            "pages": [
+              "api/layout/grid",
+              "api/layout/tabs",
+              "api/layout/accordion",
+              "api/layout/alert",
+              "api/layout/callout"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI Reference",
+        "groups": [
+          {
+            "group": "Commands",
+            "pages": [
+              "cli/dev",
+              "cli/build",
+              "cli/sources",
+              "cli/preview"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "cli/config-file",
+              "cli/environment-variables"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Plugin Development",
+        "groups": [
+          {
+            "group": "Building Plugins",
+            "pages": [
+              "plugins/overview",
+              "plugins/datasource-plugins",
+              "plugins/component-plugins"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

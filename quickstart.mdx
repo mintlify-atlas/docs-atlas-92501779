@@ -1,80 +1,288 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get a working Evidence app running in under 5 minutes
 ---
 
-## Get started in three steps
+# Quickstart
 
-Get your documentation site running locally and make your first customization.
+Get Evidence up and running in under 5 minutes. This guide will walk you through creating a new Evidence project, starting the development server, and creating your first interactive page.
 
-### Step 1: Set up your local environment
+<Steps>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Step title="Create a new Evidence project">
 
-### Step 2: Deploy your changes
+The fastest way to start is using the VSCode extension, but you can also use the command line:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<CodeGroup>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+```bash npm
+npx degit evidence-dev/template my-project
+cd my-project
+npm install
+```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+```bash yarn
+npx degit evidence-dev/template my-project
+cd my-project
+yarn install
+```
 
-### Step 3: Go live
+```bash pnpm
+npx degit evidence-dev/template my-project
+cd my-project
+pnpm install
+```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+</CodeGroup>
+
+This creates a new Evidence project with:
+- Demo data (a DuckDB database called `needful_things`)
+- Example pages in the `pages` directory
+- Pre-configured data sources
+
+</Step>
+
+<Step title="Run your data sources">
+
+Evidence transforms your SQL queries into a unified data cache. Run the sources command to build this cache:
+
+<CodeGroup>
+
+```bash npm
+npm run sources
+```
+
+```bash yarn
+yarn sources
+```
+
+```bash pnpm
+pnpm sources
+```
+
+</CodeGroup>
+
+<Info>
+This step executes all your source queries and creates `.parquet` files that Evidence uses to power your pages.
+</Info>
+
+</Step>
+
+<Step title="Start the development server">
+
+Launch the Evidence development server:
+
+<CodeGroup>
+
+```bash npm
+npm run dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+</CodeGroup>
+
+Your browser should automatically open to `http://localhost:3000`. You'll see the Evidence welcome page with the template app.
+
+<Tip>
+The development server supports hot module replacement (HMR). Save any markdown file and see your changes instantly in the browser - no restart required.
+</Tip>
+
+</Step>
+
+<Step title="Create your first page">
+
+Navigate to the `pages` directory and create a new file called `my-first-page.md`:
+
+````markdown
+# My first Evidence page
+
+## Query your data
+
+```sql orders_summary
+select 
+    count(*) as total_orders,
+    sum(sales) as total_sales,
+    avg(sales) as avg_order_value
+from needful_things.orders
+```
+
+## Display results
+
+We've had <Value data={orders_summary} column="total_orders"/> orders totaling 
+<Value data={orders_summary} column="total_sales" fmt="usd"/>.
+
+## Visualize with a chart
+
+```sql orders_by_month
+select 
+    date_trunc('month', order_datetime) as month,
+    count(*) as orders,
+    sum(sales) as sales
+from needful_things.orders
+group by month
+order by month desc
+limit 12
+```
+
+<BarChart 
+    data={orders_by_month}
+    x="month" 
+    y="sales"
+    title="Sales by Month"
+/>
+````
+
+Save the file and navigate to `http://localhost:3000/my-first-page` to see your new page.
+
+</Step>
+
+<Step title="Add a data table">
+
+Let's display the top 10 customers. Add this to your page:
+
+````markdown
+## Top customers
+
+```sql top_customers
+select 
+    customer_name,
+    count(*) as order_count,
+    sum(sales) as total_spent
+from needful_things.orders
+group by customer_name
+order by total_spent desc
+limit 10
+```
+
+<DataTable data={top_customers}/>
+````
+
+The `DataTable` component automatically formats your data with sorting, filtering, and pagination.
+
+</Step>
+
+</Steps>
+
+## Understanding Evidence syntax
+
+Evidence uses **Evidence-flavored Markdown** which extends standard markdown with:
+
+### SQL code fences
+
+Queries are written in code fences with a unique name:
+
+````markdown
+```sql query_name
+select * from table
+```
+````
+
+The query results become available to all components on the page as `{query_name}`.
+
+### Components
+
+Components use angle brackets like HTML:
+
+```markdown
+<ComponentName 
+    data={query_name}
+    prop1="value"
+    prop2={variable}
+/>
+```
+
+### Inline values
+
+Display query results inline:
+
+```markdown
+Total revenue: <Value data={sales} column="revenue" fmt="usd"/>
+```
+
+### Loops and conditionals
+
+Use Svelte-style syntax for control flow:
+
+```markdown
+{#each customers as customer}
+- {customer.name}
+{/each}
+
+{#if revenue > 1000000}
+We hit our target!
+{:else}
+Keep pushing!
+{/if}
+```
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Connect your data" icon="database" href="/installation#connect-your-database">
+    Replace the demo data with your own database or data warehouse
+  </Card>
+  
+  <Card title="Explore components" icon="chart-mixed" href="/components">
+    Browse the full library of charts, tables, and UI components
+  </Card>
+  
+  <Card title="Deploy your app" icon="rocket" href="/deployment">
+    Learn how to deploy your Evidence app to production
+  </Card>
+  
+  <Card title="View examples" icon="code" href="https://github.com/evidence-dev/demo">
+    Explore the Needful Things demo app on GitHub
+  </Card>
 </CardGroup>
 
+## CLI commands reference
+
+Here are the most common Evidence CLI commands:
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start the development server on port 3000 |
+| `npm run sources` | Build source queries and create data cache |
+| `npm run build` | Create a production build in the `build` directory |
+| `npm run preview` | Preview the production build locally |
+| `npx evidence sources --changed` | Only rebuild changed source queries |
+| `npx evidence sources --strict` | Fail if any source query fails |
+
+<Tip>
+Add the `--debug` flag to any command for verbose logging: `npm run dev -- --debug`
+</Tip>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Source manifest not found">
+    If you see a warning about missing source manifest, run `npm run sources` to generate the data cache.
+  </Accordion>
+  
+  <Accordion title="Port 3000 already in use">
+    The Evidence dev server runs on port 3000 by default. If this port is already in use, you can specify a different port:
+    
+    ```bash
+    npx vite dev --port 3001
+    ```
+  </Accordion>
+  
+  <Accordion title="Changes not appearing">
+    Make sure you've saved your file (Ctrl+S or Cmd+S). If changes still don't appear, try refreshing your browser or restarting the dev server.
+  </Accordion>
+  
+  <Accordion title="Query not found">
+    Ensure your query name in the code fence matches the name you're using in components. Query names are case-sensitive.
+  </Accordion>
+</AccordionGroup>
+
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+Need help? Join the [Evidence Slack community](https://slack.evidence.dev) where the team and community members are ready to help.
 </Note>

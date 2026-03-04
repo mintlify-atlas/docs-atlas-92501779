@@ -1,0 +1,180 @@
+---
+title: Checkbox
+description: A toggle input for boolean true/false values
+---
+
+The `Checkbox` component provides a simple way to capture boolean input from users.
+
+## Basic Usage
+
+```svelte
+<Checkbox 
+  name="showInactive" 
+  title="Include inactive users"
+/>
+```
+
+## Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for the input. Used to reference the checkbox state using `{inputs.name}`
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Label text displayed next to the checkbox
+</ParamField>
+
+<ParamField path="checked" type="boolean" default="false">
+  Initial checked state of the checkbox
+  
+  ```svelte
+  <Checkbox name="subscribe" title="Subscribe to newsletter" checked />
+  ```
+</ParamField>
+
+<ParamField path="defaultValue" type="boolean | string" default="false">
+  **Deprecated:** Use `checked` prop instead. Initial state of the checkbox. Accepts boolean or string ("true"/"false")
+</ParamField>
+
+<ParamField path="description" type="string">
+  Help text displayed as an info icon next to the title
+</ParamField>
+
+<ParamField path="hideDuringPrint" type="boolean" default="true">
+  Whether to hide the checkbox when printing the page
+</ParamField>
+
+## Using Checkbox Values
+
+The checkbox value is a boolean that can be used in queries and conditional logic:
+
+### In SQL Queries
+
+```sql
+SELECT * 
+FROM users
+WHERE is_active = true
+   OR {inputs.showInactive}
+```
+
+### In Conditional Rendering
+
+```svelte
+<Checkbox name="showDetails" title="Show detailed view" />
+
+{#if inputs.showDetails}
+  <DetailedTable data={salesData} />
+{:else}
+  <SummaryTable data={salesData} />
+{/if}
+```
+
+## Input Store Structure
+
+The checkbox value is stored as a boolean:
+
+```javascript
+inputs.showInactive // true or false
+```
+
+## Examples
+
+### Toggle Data Visibility
+
+```svelte
+<Checkbox 
+  name="includeZeros" 
+  title="Include zero values"
+  description="Show rows with zero sales"
+/>
+
+```sql filtered_sales
+SELECT 
+  product,
+  sales
+FROM product_sales
+WHERE sales > 0 OR {inputs.includeZeros}
+```
+```
+
+### Multiple Filters
+
+```svelte
+<Checkbox name="includeInactive" title="Include inactive" />
+<Checkbox name="includeArchived" title="Include archived" />
+<Checkbox name="includeDraft" title="Include drafts" checked />
+
+```sql filtered_items
+SELECT * FROM items
+WHERE 
+  (status = 'active' OR {inputs.includeInactive})
+  AND (archived = false OR {inputs.includeArchived})
+  AND (status != 'draft' OR {inputs.includeDraft})
+```
+```
+
+### Conditional Chart Types
+
+```svelte
+<Checkbox name="showTrend" title="Show trend line" />
+
+<LineChart 
+  data={timeSeriesData}
+  x="date"
+  y="value"
+>
+  {#if inputs.showTrend}
+    <ReferenceLine y={avgValue} label="Average" />
+  {/if}
+</LineChart>
+```
+
+### Toggle Table Columns
+
+```svelte
+<Checkbox name="showRevenue" title="Revenue" checked />
+<Checkbox name="showProfit" title="Profit" checked />
+<Checkbox name="showMargin" title="Margin" />
+
+<DataTable data={financials}>
+  <Column id="product" />
+  {#if inputs.showRevenue}
+    <Column id="revenue" />
+  {/if}
+  {#if inputs.showProfit}
+    <Column id="profit" />
+  {/if}
+  {#if inputs.showMargin}
+    <Column id="margin" />
+  {/if}
+</DataTable>
+```
+
+### Default Checked State
+
+```svelte
+<!-- Using the checked prop (recommended) -->
+<Checkbox 
+  name="expandAll" 
+  title="Expand all sections"
+  checked
+/>
+
+<!-- Using defaultValue (deprecated) -->
+<Checkbox 
+  name="notifications" 
+  title="Enable notifications"
+  defaultValue={true}
+/>
+```
+
+## Boolean String Conversion
+
+The checkbox automatically converts string values to booleans:
+
+```svelte
+<Checkbox name="flag1" defaultValue="true" />   <!-- true -->
+<Checkbox name="flag2" defaultValue="false" />  <!-- false -->
+<Checkbox name="flag3" defaultValue={true} />   <!-- true -->
+<Checkbox name="flag4" defaultValue={false} />  <!-- false -->
+```

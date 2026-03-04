@@ -1,0 +1,254 @@
+---
+title: "DuckDB"
+description: "Connect Evidence to DuckDB databases"
+---
+
+## Installation
+
+Install the DuckDB connector:
+
+```bash
+npm install @evidence-dev/duckdb
+```
+
+## Configuration
+
+DuckDB can run in-memory or connect to a local database file.
+
+### Local Database File
+
+```yaml connection.yaml
+name: duckdb
+type: duckdb
+options:
+  filename: analytics.duckdb
+```
+
+<Note>
+  The `filename` path is relative to your **sources directory**, not your project root.
+</Note>
+
+### In-Memory Database
+
+```yaml connection.yaml
+name: duckdb
+type: duckdb
+options:
+  filename: ":memory:"
+```
+
+## Configuration Parameters
+
+<ParamField path="filename" type="string" required default="needful_things.duckdb">
+  DuckDB database filename. Use `:memory:` for an in-memory database. Path is relative to your sources directory.
+</ParamField>
+
+## Initialization Script
+
+You can create an `initialize.sql` file in your sources directory to run setup commands before queries execute:
+
+```sql sources/initialize.sql
+-- Install and load extensions
+INSTALL httpfs;
+LOAD httpfs;
+
+-- Set S3 credentials
+SET s3_region='us-east-1';
+SET s3_access_key_id='${AWS_ACCESS_KEY_ID}';
+SET s3_secret_access_key='${AWS_SECRET_ACCESS_KEY}';
+
+-- Create views
+CREATE VIEW sales AS 
+SELECT * FROM read_parquet('s3://my-bucket/sales/*.parquet');
+```
+
+The initialization script runs automatically when the connection is established.
+
+## Features
+
+### Type Mapping
+
+DuckDB types are mapped to Evidence types:
+
+- **Numbers**: TINYINT, SMALLINT, INTEGER, BIGINT, HUGEINT, FLOAT, DOUBLE, DECIMAL
+- **Strings**: VARCHAR, STRING, TEXT, TIME
+- **Dates**: DATE, TIMESTAMP, TIMESTAMP WITH TIME ZONE
+- **Booleans**: BOOLEAN
+
+### Reading External Files
+
+DuckDB can query many file formats directly:
+
+```sql queries/parquet_data.sql
+SELECT * 
+FROM read_parquet('data/sales/*.parquet')
+WHERE order_date >= '2024-01-01'
+```
+
+```sql queries/csv_data.sql
+SELECT * 
+FROM read_csv_auto('data/customers.csv')
+```
+
+```sql queries/json_data.sql
+SELECT * 
+FROM read_json_auto('data/events.json')
+```
+
+### S3 and Cloud Storage
+
+With the `httpfs` extension, query files from cloud storage:
+
+```sql queries/s3_data.sql
+INSTALL httpfs;
+LOAD httpfs;
+
+SET s3_region='us-east-1';
+SET s3_access_key_id='${AWS_ACCESS_KEY_ID}';
+SET s3_secret_access_key='${AWS_SECRET_ACCESS_KEY}';
+
+SELECT *
+FROM read_parquet('s3://my-bucket/data/*.parquet')
+LIMIT 1000
+```
+
+### Extensions
+
+DuckDB supports many extensions. Install them in your queries or initialization script:
+
+```sql
+INSTALL httpfs;      -- HTTP and S3 file access
+INSTALL postgres;    -- PostgreSQL scanner
+INSTALL sqlite;      -- SQLite scanner
+INSTALL json;        -- JSON functions
+INSTALL excel;       -- Excel file support
+
+LOAD httpfs;
+```
+
+### Multi-Statement Queries
+
+The connector supports multi-statement SQL. All statements except the last are executed as setup:
+
+```sql queries/with_setup.sql
+-- This runs first
+SET memory_limit='4GB';
+INSTALL httpfs;
+LOAD httpfs;
+
+-- This is the main query that returns data
+SELECT * 
+FROM read_parquet('s3://bucket/data.parquet')
+LIMIT 100
+```
+
+## Example Queries
+
+### Query Local Parquet Files
+
+```sql queries/parquet_sales.sql
+SELECT 
+  DATE_TRUNC('month', order_date) as month,
+  product_category,
+  SUM(revenue) as total_revenue,
+  COUNT(*) as order_count
+FROM read_parquet('data/sales/**/*.parquet')
+WHERE order_date >= DATE '2024-01-01'
+GROUP BY 1, 2
+ORDER BY 1 DESC, 3 DESC
+```
+
+### Join Multiple File Formats
+
+```sql queries/combined_data.sql
+SELECT 
+  c.customer_name,
+  c.segment,
+  SUM(o.amount) as total_spent
+FROM read_csv_auto('data/customers.csv') c
+JOIN read_parquet('data/orders/*.parquet') o
+  ON c.customer_id = o.customer_id
+GROUP BY 1, 2
+ORDER BY 3 DESC
+```
+
+### Attach Other Databases
+
+```sql queries/multi_database.sql
+ATTACH 'other.duckdb' AS other_db;
+ATTACH 'warehouse.db' AS sqlite_db (TYPE SQLITE);
+
+SELECT 
+  a.*,
+  b.supplemental_data
+FROM main.sales a
+LEFT JOIN other_db.enrichment b
+  ON a.id = b.id
+```
+
+## Performance Tips
+
+### Use Columnar Formats
+
+Parquet files offer the best performance for analytical queries:
+
+```sql
+-- Faster than CSV
+SELECT * FROM read_parquet('data/*.parquet')
+```
+
+### Partition Your Data
+
+Organize files by date or category for better query performance:
+
+```
+data/
+  sales/
+    year=2024/
+      month=01/*.parquet
+      month=02/*.parquet
+```
+
+```sql
+SELECT * 
+FROM read_parquet('data/sales/year=2024/month=01/*.parquet')
+```
+
+### Persistent Database Benefits
+
+Using a persistent `.duckdb` file:
+- Caches metadata for faster subsequent queries
+- Allows indexes and materialized views
+- Persists temporary results between sessions
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="File not found errors">
+    - Ensure the `filename` path is relative to your sources directory
+    - Check that the `.duckdb` file exists at the specified location
+    - For read-only mode, the file must already exist
+  </Accordion>
+  
+  <Accordion title="Extension errors">
+    Extensions must be installed and loaded:
+    ```sql
+    INSTALL extension_name;
+    LOAD extension_name;
+    ```
+  </Accordion>
+  
+  <Accordion title="Memory errors">
+    For large datasets, increase memory limit in your queries:
+    ```sql
+    SET memory_limit='8GB';
+    SELECT * FROM large_table;
+    ```
+  </Accordion>
+  
+  <Accordion title="initialize.sql not running">
+    - Ensure the file is named exactly `initialize.sql`
+    - Place it in the same directory as your `connection.yaml`
+    - Check for SQL syntax errors in the initialization script
+  </Accordion>
+</AccordionGroup>

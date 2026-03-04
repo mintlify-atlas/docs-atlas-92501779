@@ -1,0 +1,246 @@
+---
+title: 'BigValue'
+description: 'Display a prominent metric card with optional comparison and sparkline'
+---
+
+## Overview
+
+The `BigValue` component displays a large, prominent metric with an optional title, comparison value, and sparkline chart. It's ideal for showcasing key performance indicators (KPIs) in dashboards.
+
+## Basic Usage
+
+```jsx
+<BigValue data={sales} value="total" title="Total Revenue" />
+```
+
+## With Comparison
+
+```jsx
+<BigValue 
+  data={sales} 
+  value="current_revenue" 
+  comparison="revenue_change"
+  title="Monthly Revenue"
+  comparisonTitle="vs. last month"
+/>
+```
+
+## With Sparkline
+
+```jsx
+<BigValue 
+  data={daily_sales} 
+  value="revenue" 
+  sparkline="date"
+  title="Revenue Trend"
+/>
+```
+
+## Props
+
+### Data Selection
+
+<ParamField path="data" type="Query | object | array" required>
+  Query result, object, or array containing the values to display.
+</ParamField>
+
+<ParamField path="value" type="string" required>
+  Column name for the primary value to display.
+</ParamField>
+
+<ParamField path="comparison" type="string">
+  Column name for the comparison value (shown below the main value).
+</ParamField>
+
+### Display Options
+
+<ParamField path="title" type="string">
+  Title displayed above the value. Defaults to the column name if not specified.
+</ParamField>
+
+<ParamField path="comparisonTitle" type="string">
+  Label for the comparison value. Defaults to the comparison column name.
+</ParamField>
+
+<ParamField path="comparisonDelta" type="boolean" default="true">
+  Show comparison as a delta with up/down arrows. When false, shows raw value.
+</ParamField>
+
+### Formatting
+
+<ParamField path="fmt" type="string">
+  Format string for the main value. Examples: `"usd"`, `"usd0"`, `"pct1"`, `"#,##0"`.
+</ParamField>
+
+<ParamField path="comparisonFmt" type="string">
+  Format string for the comparison value. Inherits from `fmt` if not specified.
+</ParamField>
+
+### Sparkline
+
+<ParamField path="sparkline" type="string">
+  Column name for the sparkline x-axis (typically a date column).
+</ParamField>
+
+<ParamField path="sparklineType" type="'line' | 'area' | 'bar'" default="'line'">
+  Type of sparkline chart to display.
+</ParamField>
+
+<ParamField path="sparklineColor" type="string">
+  Color for the sparkline. Accepts color names, hex codes, or theme colors.
+</ParamField>
+
+<ParamField path="sparklineValueFmt" type="string">
+  Format string for sparkline tooltip values.
+</ParamField>
+
+<ParamField path="sparklineDateFmt" type="string">
+  Format string for sparkline tooltip dates.
+</ParamField>
+
+<ParamField path="sparklineYScale" type="boolean" default="false">
+  Show y-axis scale on sparkline.
+</ParamField>
+
+<ParamField path="connectGroup" type="string">
+  Group name to connect multiple sparklines for synchronized tooltips.
+</ParamField>
+
+### Delta Styling
+
+<ParamField path="downIsGood" type="boolean" default="false">
+  Reverse color coding for deltas (green for negative, red for positive).
+</ParamField>
+
+<ParamField path="neutralMin" type="number" default="0">
+  Minimum value for neutral range (values between neutralMin and neutralMax show as neutral).
+</ParamField>
+
+<ParamField path="neutralMax" type="number" default="0">
+  Maximum value for neutral range.
+</ParamField>
+
+### Sizing
+
+<ParamField path="maxWidth" type="string" default="'none'">
+  Maximum width of the component. Accepts CSS width values.
+</ParamField>
+
+<ParamField path="minWidth" type="string" default="'18%'">
+  Minimum width of the component. Accepts CSS width values.
+</ParamField>
+
+### Links
+
+<ParamField path="link" type="string">
+  URL to navigate to when clicking the value.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Description text shown in an info tooltip next to the title.
+</ParamField>
+
+### Custom Classes
+
+<ParamField path="titleClass" type="string">
+  Custom CSS class for the title element.
+</ParamField>
+
+<ParamField path="valueClass" type="string">
+  Custom CSS class for the value element.
+</ParamField>
+
+<ParamField path="comparisonClass" type="string">
+  Custom CSS class for the comparison element.
+</ParamField>
+
+### Error Handling
+
+<ParamField path="emptySet" type="'pass' | 'warn' | 'error'">
+  How to handle empty datasets.
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom message to display when dataset is empty.
+</ParamField>
+
+## Examples
+
+### Simple KPI
+
+```jsx
+<BigValue 
+  data={sales} 
+  value="total" 
+  title="Total Revenue" 
+  fmt="usd0"
+/>
+```
+
+### With Delta Comparison
+
+```jsx
+<BigValue 
+  data={metrics} 
+  value="current_revenue" 
+  comparison="revenue_change"
+  comparisonTitle="vs. last month"
+  fmt="usd0"
+  comparisonFmt="pct1"
+  downIsGood={false}
+/>
+```
+
+### With Sparkline
+
+```jsx
+<BigValue 
+  data={daily_metrics} 
+  value="fare" 
+  sparkline="departure_date"
+  sparklineType="area"
+  sparklineColor="blue"
+  title="Daily Fare Trend"
+/>
+```
+
+### Multiple BigValues
+
+```jsx
+<div class="flex gap-4">
+  <BigValue data={sales} value="total_x" title="Metric X" />
+  <BigValue data={sales} value="total_y" title="Metric Y" />
+</div>
+```
+
+### With Non-Delta Comparison
+
+```jsx
+<BigValue 
+  data={metrics} 
+  value="current_value" 
+  comparison="previous_value"
+  comparisonDelta={false}
+  comparisonTitle="Last Period"
+  fmt="usd0"
+/>
+```
+
+### With Linked Value
+
+```jsx
+<BigValue 
+  data={revenue} 
+  value="total" 
+  title="Total Revenue" 
+  fmt="usd0"
+  link="/revenue-details"
+/>
+```
+
+## Notes
+
+- The component displays inline-block, allowing multiple BigValues to appear side by side
+- When `comparisonDelta` is true, the comparison shows with colored arrows (up/down) and appropriate positive/negative coloring
+- Use `downIsGood={true}` for metrics where decreases are positive (e.g., cost, error rate)
+- Sparklines are automatically sized to fit within the component

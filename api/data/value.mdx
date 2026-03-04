@@ -1,0 +1,149 @@
+---
+title: 'Value'
+description: 'Display a single formatted value from a query result'
+---
+
+## Overview
+
+The `Value` component displays a single formatted value from a query result. It's useful for showing metrics inline within text or displaying individual data points.
+
+## Basic Usage
+
+```jsx
+Total revenue: <Value data={sales} column="revenue" />
+```
+
+## With Formatting
+
+```jsx
+<Value data={sales} column="revenue" fmt="usd0" />
+```
+
+## With Aggregation
+
+```jsx
+Average fare: <Value data={flights} column="fare" agg="avg" fmt="usd" />
+```
+
+## Props
+
+### Data Selection
+
+<ParamField path="data" type="Query | object | array" required>
+  Query result, object, or array containing the value to display.
+</ParamField>
+
+<ParamField path="column" type="string">
+  Column name to display. If not specified, uses the first column in the dataset.
+</ParamField>
+
+<ParamField path="value" type="string">
+  Alias for `column`. Use either `column` or `value`, not both.
+</ParamField>
+
+<ParamField path="row" type="number" default="0">
+  Row index to select from the dataset (0-based).
+</ParamField>
+
+<ParamField path="agg" type="'sum' | 'avg' | 'max' | 'min' | 'median'">
+  Aggregation function to apply to the column. When specified, aggregates all rows.
+</ParamField>
+
+### Formatting
+
+<ParamField path="fmt" type="string">
+  Format string for the value. Examples: `"usd"`, `"usd0"`, `"pct1"`, `"#,##0"`.
+</ParamField>
+
+### Styling
+
+<ParamField path="color" type="string">
+  Color for the value text. Accepts color names, hex codes, or theme colors.
+</ParamField>
+
+<ParamField path="redNegatives" type="boolean" default="false">
+  Display negative values in red color.
+</ParamField>
+
+### Placeholder
+
+<ParamField path="placeholder" type="string">
+  Text to display when no data is provided. Shows `[placeholder text]` with hover tooltip.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Description text shown in an info tooltip next to the value.
+</ParamField>
+
+### Error Handling
+
+<ParamField path="emptySet" type="'pass' | 'warn' | 'error'">
+  How to handle empty datasets.
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom message to display when dataset is empty.
+</ParamField>
+
+## Examples
+
+### Inline in Text
+
+```jsx
+Our total sales reached <Value data={sales} column="total" fmt="usd0" /> 
+this quarter, with an average order value of 
+<Value data={sales} column="order_value" agg="avg" fmt="usd" />.
+```
+
+### With Aggregations
+
+```jsx
+<div>
+  Min: <Value data={flights} column="fare" agg="min" fmt="usd0" />
+  Max: <Value data={flights} column="fare" agg="max" fmt="usd0" />
+  Avg: <Value data={flights} column="fare" agg="avg" fmt="usd" />
+  Median: <Value data={flights} column="fare" agg="median" fmt="usd" />
+</div>
+```
+
+### With Color
+
+```jsx
+<Value 
+  data={revenue} 
+  column="total" 
+  fmt="usd0" 
+  color="#00FF00" 
+/>
+
+<Value 
+  data={revenue} 
+  column="change" 
+  fmt="usd0" 
+  color="#45818E" 
+  redNegatives 
+/>
+```
+
+### With Data as Object
+
+```jsx
+{#each my_data as row}
+  <div>
+    {row.series}: <Value data={row} value="total" color="#674EA7" />
+  </div>
+{/each}
+```
+
+### With Placeholder
+
+```jsx
+<Value placeholder="No data selected" />
+```
+
+## Notes
+
+- When using `agg`, the component automatically aggregates the specified column across all rows
+- If both `value` and `column` are provided, `column` takes precedence
+- Colors can be specified as hex codes (`"#00FF00"`), color names (`"green"`), or theme variables
+- The component automatically detects and formats date columns

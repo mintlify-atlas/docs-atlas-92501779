@@ -1,0 +1,370 @@
+---
+title: "Trino (and Presto)"
+description: "Connect Evidence to Trino or Presto distributed SQL query engines"
+---
+
+## Installation
+
+Install the Trino connector:
+
+```bash
+npm install @evidence-dev/trino
+```
+
+<Note>
+  This connector works with both **Trino** and **Presto** query engines. Trino is the default.
+</Note>
+
+## Configuration
+
+<CodeGroup>
+```yaml connection.yaml (Trino)
+name: trino
+type: trino
+options:
+  host: trino.example.com
+  port: 443
+  ssl: true
+  user: ${TRINO_USER}
+  password: ${TRINO_PASSWORD}
+  catalog: hive
+  schema: default
+```
+
+```yaml connection.yaml (Presto)
+name: presto
+type: trino
+options:
+  host: presto.example.com
+  port: 8080
+  ssl: false
+  user: ${PRESTO_USER}
+  catalog: hive
+  schema: default
+  engine: presto
+```
+</CodeGroup>
+
+## Configuration Parameters
+
+<ParamField path="host" type="string" required default="localhost">
+  Trino/Presto coordinator hostname
+</ParamField>
+
+<ParamField path="port" type="number" required default={443}>
+  Coordinator port (443 for HTTPS, 8080 for HTTP)
+</ParamField>
+
+<ParamField path="user" type="string" required>
+  Username for authentication
+</ParamField>
+
+<ParamField path="password" type="string">
+  Password for basic authentication (optional)
+</ParamField>
+
+<ParamField path="ssl" type="boolean" default={false}>
+  Enable SSL/TLS. **Must be true for HTTPS connections**
+</ParamField>
+
+<ParamField path="catalog" type="string">
+  Default catalog to query
+</ParamField>
+
+<ParamField path="schema" type="string">
+  Default schema within the catalog
+</ParamField>
+
+<ParamField path="engine" type="string" default="trino">
+  Query engine type: `trino` or `presto`
+</ParamField>
+
+## Authentication
+
+### No Authentication
+
+For development environments:
+
+```yaml connection.yaml
+name: trino
+type: trino
+options:
+  host: localhost
+  port: 8080
+  user: evidence
+  catalog: hive
+  schema: default
+```
+
+### Basic Authentication
+
+For production with password authentication:
+
+```yaml connection.yaml
+name: trino
+type: trino
+options:
+  host: trino.example.com
+  port: 443
+  ssl: true
+  user: ${TRINO_USER}
+  password: ${TRINO_PASSWORD}
+  catalog: hive
+  schema: default
+```
+
+## Features
+
+### Type Mapping
+
+Trino types are mapped to Evidence types:
+
+- **Numbers**: TINYINT, SMALLINT, INTEGER, BIGINT, REAL, DOUBLE, DECIMAL
+- **Strings**: VARCHAR, CHAR, VARBINARY, JSON
+- **Dates**: DATE, TIME, TIMESTAMP
+- **Booleans**: BOOLEAN
+
+### Column Name Normalization
+
+Column names are converted to lowercase and spaces are replaced with underscores.
+
+### Multiple Catalogs
+
+Query across different data sources using catalog prefixes:
+
+```sql queries/cross_catalog.sql
+SELECT 
+  h.customer_id,
+  h.name,
+  m.total_orders
+FROM hive.customers.users h
+JOIN mysql.analytics.order_summary m
+  ON h.customer_id = m.customer_id
+```
+
+## Example Queries
+
+### Basic Query
+
+```sql queries/sales_analysis.sql
+SELECT 
+  DATE_TRUNC('month', order_date) as month,
+  SUM(amount) as total_revenue,
+  COUNT(*) as order_count
+FROM hive.sales.orders
+WHERE order_date >= CURRENT_DATE - INTERVAL '90' DAY
+GROUP BY 1
+ORDER BY 1 DESC
+```
+
+### Federated Query
+
+```sql queries/federated.sql
+-- Join data from Hive and PostgreSQL
+SELECT 
+  p.product_name,
+  p.category,
+  s.quantity_sold,
+  s.revenue
+FROM postgresql.public.products p
+JOIN hive.analytics.sales_summary s
+  ON p.product_id = s.product_id
+WHERE s.sale_date >= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+### Array and JSON Functions
+
+```sql queries/complex_types.sql
+SELECT 
+  user_id,
+  CARDINALITY(purchased_items) as items_count,
+  JSON_EXTRACT_SCALAR(metadata, '$.source') as traffic_source
+FROM hive.events.user_sessions
+WHERE event_date = CURRENT_DATE
+```
+
+## Catalogs and Connectors
+
+Trino supports many data source connectors:
+
+- **Hive**: Hadoop/S3 data lakes
+- **PostgreSQL**: PostgreSQL databases
+- **MySQL**: MySQL databases
+- **Iceberg**: Apache Iceberg tables
+- **Delta Lake**: Delta Lake tables
+- **MongoDB**: MongoDB collections
+- **Elasticsearch**: Elasticsearch indexes
+- **Kafka**: Kafka topics
+
+### Configure Catalogs
+
+Catalogs are configured on the Trino coordinator. To query different catalogs, specify them in your queries:
+
+```sql
+SELECT * FROM catalog_name.schema_name.table_name
+```
+
+## Performance Optimization
+
+### Partition Filtering
+
+Always filter on partition columns:
+
+```sql
+-- Good: filters on partition column
+SELECT * FROM hive.events.pageviews
+WHERE event_date = DATE '2024-03-01'
+
+-- Slow: full table scan
+SELECT * FROM hive.events.pageviews
+WHERE event_time > TIMESTAMP '2024-03-01 00:00:00'
+```
+
+### Use APPROX Functions
+
+For faster approximate results:
+
+```sql
+SELECT 
+  region,
+  APPROX_DISTINCT(user_id) as unique_users,
+  APPROX_PERCENTILE(order_value, 0.5) as median_order
+FROM hive.sales.orders
+GROUP BY region
+```
+
+### Limit Data Scans
+
+```sql
+-- Filter early to reduce data scanned
+WITH filtered_data AS (
+  SELECT *
+  FROM large_table
+  WHERE partition_date >= CURRENT_DATE - INTERVAL '7' DAY
+)
+SELECT 
+  category,
+  COUNT(*) as count
+FROM filtered_data
+GROUP BY category
+```
+
+### Use Appropriate File Formats
+
+For Hive tables, prefer columnar formats:
+- **Parquet**: Best for analytical queries
+- **ORC**: Good for Hive integration
+- **Avoid CSV**: Much slower for large-scale analytics
+
+## Presto Configuration
+
+To use Presto instead of Trino, set the engine parameter:
+
+```yaml connection.yaml
+name: presto
+type: trino
+options:
+  host: presto.example.com
+  port: 8080
+  user: ${PRESTO_USER}
+  catalog: hive
+  schema: default
+  engine: presto
+```
+
+<Note>
+  The connector uses the same client library for both Trino and Presto. Most queries are compatible between the two engines.
+</Note>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection refused">
+    - Verify host and port are correct
+    - Check if SSL is required (use `ssl: true` for HTTPS)
+    - Ensure the Trino/Presto coordinator is running
+    - Check network connectivity and firewall rules
+  </Accordion>
+  
+  <Accordion title="Authentication errors">
+    - Verify username and password are correct
+    - Check if the coordinator requires authentication
+    - For cloud deployments, ensure credentials haven't expired
+  </Accordion>
+  
+  <Accordion title="Catalog not found">
+    - Verify the catalog name is correct
+    - Check available catalogs: `SHOW CATALOGS`
+    - Ensure the catalog is configured on the coordinator
+  </Accordion>
+  
+  <Accordion title="Schema or table not found">
+    - Check the schema exists: `SHOW SCHEMAS IN catalog_name`
+    - List tables: `SHOW TABLES IN catalog.schema`
+    - Verify permissions to access the schema/table
+  </Accordion>
+  
+  <Accordion title="Slow query performance">
+    - Filter on partition columns when possible
+    - Check query execution plan: `EXPLAIN SELECT ...`
+    - Use APPROX functions for faster aggregations
+    - Verify data is in columnar format (Parquet/ORC)
+    - Consider adding partition columns to large tables
+  </Accordion>
+  
+  <Accordion title="SSL/TLS errors">
+    For HTTPS connections, ensure:
+    ```yaml
+    ssl: true
+    port: 443
+    ```
+    
+    For HTTP connections:
+    ```yaml
+    ssl: false
+    port: 8080
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Features
+
+### Query Federation
+
+Join data across multiple systems in a single query:
+
+```sql queries/federation.sql
+SELECT 
+  c.customer_name,
+  o.order_count,
+  s.product_name
+FROM postgresql.crm.customers c
+JOIN mysql.analytics.order_summary o
+  ON c.customer_id = o.customer_id
+JOIN hive.products.catalog s
+  ON o.product_id = s.product_id
+```
+
+### Time Travel (Iceberg/Delta)
+
+Query historical versions of tables:
+
+```sql queries/time_travel.sql
+SELECT *
+FROM iceberg.analytics.sales
+FOR SYSTEM_TIME AS OF TIMESTAMP '2024-01-01 00:00:00'
+```
+
+### Geospatial Queries
+
+```sql queries/geospatial.sql
+SELECT 
+  store_id,
+  ST_Distance(
+    ST_Point(store_longitude, store_latitude),
+    ST_Point(-122.4194, 37.7749)  -- San Francisco
+  ) as distance_from_sf
+FROM hive.locations.stores
+ORDER BY distance_from_sf
+LIMIT 10
+```

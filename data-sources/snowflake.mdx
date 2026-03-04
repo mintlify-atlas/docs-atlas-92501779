@@ -1,0 +1,265 @@
+---
+title: "Snowflake"
+description: "Connect Evidence to Snowflake"
+---
+
+## Installation
+
+Install the Snowflake connector:
+
+```bash
+npm install @evidence-dev/snowflake
+```
+
+## Authentication Methods
+
+Snowflake supports multiple authentication methods:
+
+1. **Username/Password** (default)
+2. **JWT** (Key Pair Authentication)
+3. **External Browser** (SSO)
+4. **Okta**
+
+## Configuration
+
+### Username/Password Authentication
+
+<CodeGroup>
+```yaml connection.yaml
+name: snowflake
+type: snowflake
+options:
+  account: abc12345.us-east-1
+  username: ${SNOWFLAKE_USER}
+  password: ${SNOWFLAKE_PASSWORD}
+  database: ANALYTICS
+  warehouse: COMPUTE_WH
+  role: ANALYST
+  schema: PUBLIC
+  authenticator: userpass
+```
+
+```env .env
+SNOWFLAKE_USER=your_username
+SNOWFLAKE_PASSWORD=your_password
+```
+</CodeGroup>
+
+### JWT (Key Pair) Authentication
+
+Use public/private key pair authentication for enhanced security.
+
+```yaml connection.yaml
+name: snowflake
+type: snowflake
+options:
+  account: abc12345.us-east-1
+  username: ${SNOWFLAKE_USER}
+  database: ANALYTICS
+  warehouse: COMPUTE_WH
+  authenticator: snowflake_jwt
+  private_key: ${SNOWFLAKE_PRIVATE_KEY}
+  passphrase: ${SNOWFLAKE_PASSPHRASE}
+```
+
+### External Browser (SSO)
+
+Use browser-based SSO authentication.
+
+```yaml connection.yaml
+name: snowflake
+type: snowflake
+options:
+  account: abc12345.us-east-1
+  username: ${SNOWFLAKE_USER}
+  database: ANALYTICS
+  warehouse: COMPUTE_WH
+  authenticator: externalbrowser
+  clientStoreTemporaryCredential: true
+```
+
+### Okta Authentication
+
+```yaml connection.yaml
+name: snowflake
+type: snowflake
+options:
+  account: abc12345.us-east-1
+  username: ${SNOWFLAKE_USER}
+  password: ${SNOWFLAKE_PASSWORD}
+  database: ANALYTICS
+  warehouse: COMPUTE_WH
+  authenticator: okta
+  okta_url: https://your-org.okta.com
+```
+
+## Configuration Parameters
+
+<ParamField path="account" type="string" required>
+  Snowflake account identifier (e.g., `abc12345.us-east-1` or `orgname-accountname`)
+</ParamField>
+
+<ParamField path="username" type="string" required>
+  Snowflake username
+</ParamField>
+
+<ParamField path="database" type="string" required>
+  Database name to connect to
+</ParamField>
+
+<ParamField path="warehouse" type="string" required>
+  Warehouse name to use for queries
+</ParamField>
+
+<ParamField path="role" type="string">
+  Role to use for the session
+</ParamField>
+
+<ParamField path="schema" type="string">
+  Default schema to use
+</ParamField>
+
+<ParamField path="authenticator" type="string" default="userpass">
+  Authentication method: `userpass`, `snowflake_jwt`, `externalbrowser`, or `okta`
+</ParamField>
+
+<ParamField path="resultPrefetch" type="number" default={2}>
+  Number of result batches to prefetch for improved performance
+</ParamField>
+
+### Username/Password Parameters
+
+<ParamField path="password" type="string" required>
+  Snowflake password
+</ParamField>
+
+### JWT Parameters
+
+<ParamField path="private_key" type="string" required>
+  Private key for JWT authentication (PEM format)
+</ParamField>
+
+<ParamField path="passphrase" type="string" required>
+  Passphrase for the encrypted private key
+</ParamField>
+
+### External Browser Parameters
+
+<ParamField path="clientStoreTemporaryCredential" type="boolean" default={false}>
+  Cache SSO token for faster subsequent connections
+</ParamField>
+
+### Okta Parameters
+
+<ParamField path="okta_url" type="string" required>
+  Full Okta URL for authentication (e.g., `https://your-org.okta.com`)
+</ParamField>
+
+## Proxy Configuration
+
+Connect through an authenticated proxy server:
+
+```yaml connection.yaml
+name: snowflake
+type: snowflake
+options:
+  account: abc12345.us-east-1
+  username: ${SNOWFLAKE_USER}
+  password: ${SNOWFLAKE_PASSWORD}
+  database: ANALYTICS
+  warehouse: COMPUTE_WH
+  proxy:
+    host: proxy.company.com
+    port: 8080
+    username: ${PROXY_USER}
+    password: ${PROXY_PASSWORD}
+    protocol: http
+```
+
+### Proxy Parameters
+
+<ParamField path="proxy.host" type="string" required>
+  Proxy server hostname
+</ParamField>
+
+<ParamField path="proxy.port" type="number" required>
+  Proxy server port
+</ParamField>
+
+<ParamField path="proxy.username" type="string">
+  Proxy authentication username
+</ParamField>
+
+<ParamField path="proxy.password" type="string">
+  Proxy authentication password
+</ParamField>
+
+<ParamField path="proxy.protocol" type="string">
+  Proxy protocol (http or https)
+</ParamField>
+
+## Features
+
+### Type Mapping
+
+Snowflake types are mapped to Evidence types:
+
+- **Numbers**: INTEGER, BIGINT, SMALLINT, NUMBER, DECIMAL, NUMERIC, FLOAT, DOUBLE, REAL
+- **Strings**: VARCHAR, CHAR, STRING, TEXT, TIME
+- **Dates**: TIMESTAMP, TIMESTAMP_LTZ, TIMESTAMP_NTZ, TIMESTAMP_TZ, DATE
+- **Booleans**: BOOLEAN
+
+### Column Name Normalization
+
+Snowflake returns column names in uppercase by default. The connector automatically converts them to lowercase for consistency with Evidence conventions.
+
+### Streaming Results
+
+Queries are executed with streaming enabled, processing results in batches for memory-efficient handling of large datasets.
+
+## Example Query
+
+Create a SQL file in your Evidence project:
+
+```sql queries/monthly_sales.sql
+SELECT 
+  DATE_TRUNC('month', order_date) as month,
+  region,
+  SUM(amount) as total_sales,
+  COUNT(DISTINCT customer_id) as unique_customers
+FROM sales.orders
+WHERE order_date >= DATEADD(month, -12, CURRENT_DATE())
+GROUP BY 1, 2
+ORDER BY 1 DESC, 3 DESC
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Account identifier format">
+    Snowflake account identifiers can use different formats:
+    - Legacy: `abc12345.us-east-1`
+    - Organization: `orgname-accountname`
+    
+    Check your Snowflake URL to determine the correct format.
+  </Accordion>
+  
+  <Accordion title="Warehouse not started">
+    Ensure the specified warehouse is running or has auto-resume enabled. Cold warehouse starts may cause initial query delays.
+  </Accordion>
+  
+  <Accordion title="JWT key format">
+    Private keys must be in PEM format. Generate key pairs using:
+    ```bash
+    openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8
+    openssl rsa -in rsa_key.p8 -pubout -out rsa_key.pub
+    ```
+  </Accordion>
+  
+  <Accordion title="Role permissions">
+    Ensure the specified role has:
+    - USAGE on the warehouse
+    - USAGE on the database and schema
+    - SELECT on required tables/views
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,231 @@
+---
+title: Dropdown
+description: A searchable dropdown component for single or multiple selection
+---
+
+The `Dropdown` component provides a flexible way to let users select one or more values from a list. It supports both static options and dynamic data from queries.
+
+## Basic Usage
+
+```svelte
+<script>
+  import { Query } from '@evidence-dev/sdk/usql';
+  
+  const categories = Query.create(`
+    SELECT DISTINCT category 
+    FROM products 
+    ORDER BY category
+  `);
+</script>
+
+<Dropdown 
+  name="selectedCategory" 
+  data={categories} 
+  value="category" 
+/>
+```
+
+## Props
+
+<ParamField path="name" type="string" required>
+  Unique identifier for the input. Used to reference the selected value in queries using `{inputs.name}`
+</ParamField>
+
+<ParamField path="title" type="string">
+  Label displayed above or within the dropdown button
+</ParamField>
+
+<ParamField path="data" type="Query">
+  Query result object to populate dropdown options. When provided, requires `value` prop.
+</ParamField>
+
+<ParamField path="value" type="string" default="value">
+  Column name from query to use as the option value. Required when using `data` prop.
+</ParamField>
+
+<ParamField path="label" type="string" default="value">
+  Column name from query to use as the display label. Defaults to the same column as `value`.
+</ParamField>
+
+<ParamField path="multiple" type="boolean" default="false">
+  When true, allows multiple values to be selected
+</ParamField>
+
+<ParamField path="defaultValue" type="string | string[]">
+  Initial value(s) to select. Use array for multiple selections.
+  
+  ```svelte
+  <Dropdown name="status" defaultValue="active" />
+  <Dropdown name="tags" multiple defaultValue={["tag1", "tag2"]} />
+  ```
+</ParamField>
+
+<ParamField path="noDefault" type="boolean" default="false">
+  When true, no option is selected by default (even if data is available)
+</ParamField>
+
+<ParamField path="selectAllByDefault" type="boolean" default="false">
+  When true and `multiple` is enabled, all options are selected by default
+</ParamField>
+
+<ParamField path="order" type="string">
+  SQL ORDER BY clause to sort options
+  
+  ```svelte
+  <Dropdown name="category" data={categories} value="name" order="name DESC" />
+  ```
+</ParamField>
+
+<ParamField path="where" type="string">
+  SQL WHERE clause to filter options
+  
+  ```svelte
+  <Dropdown name="active_users" data={users} value="id" where="status = 'active'" />
+  ```
+</ParamField>
+
+<ParamField path="description" type="string">
+  Help text displayed as an info icon next to the title
+</ParamField>
+
+<ParamField path="hideDuringPrint" type="boolean" default="true">
+  Whether to hide the dropdown when printing the page
+</ParamField>
+
+<ParamField path="disableSelectAll" type="boolean" default="false">
+  When true, hides the "Select all" option in multi-select dropdowns
+</ParamField>
+
+## Static Options
+
+You can provide static options using `DropdownOption` components:
+
+```svelte
+<Dropdown name="view">
+  <DropdownOption value="all" />
+  <DropdownOption value="active" />
+  <DropdownOption value="archived" />
+</Dropdown>
+```
+
+## Dynamic Options from Query
+
+```svelte
+<script>
+  const products = Query.create(`
+    SELECT 
+      product_id as value,
+      product_name as label
+    FROM products
+  `);
+</script>
+
+<Dropdown 
+  name="product" 
+  data={products}
+  value="value"
+  label="label"
+  title="Select Product"
+/>
+```
+
+## Multi-Select
+
+```svelte
+<Dropdown 
+  name="regions"
+  data={regionData}
+  value="region_code"
+  label="region_name"
+  multiple
+  title="Select Regions"
+/>
+```
+
+## Using Selected Values
+
+Access the selected value(s) in your queries:
+
+### Single Select
+
+```sql
+SELECT * 
+FROM sales 
+WHERE category = {inputs.selectedCategory}
+```
+
+### Multi-Select
+
+```sql
+SELECT * 
+FROM sales 
+WHERE region IN {inputs.regions.value}
+```
+
+## Input Store Structure
+
+### Single Select
+
+```javascript
+{
+  label: "Electronics",      // Display label
+  value: "'electronics'",    // SQL-safe value
+  rawValues: [{               // Original option object
+    label: "Electronics",
+    value: "electronics"
+  }]
+}
+```
+
+### Multi-Select
+
+```javascript
+{
+  label: "North, South, East",              // Comma-separated labels
+  value: "('north','south','east')",        // SQL IN clause format
+  rawValues: [                               // Array of selected options
+    { label: "North", value: "north" },
+    { label: "South", value: "south" },
+    { label: "East", value: "east" }
+  ]
+}
+```
+
+## Examples
+
+### Filter with Query and Static Options
+
+```svelte
+<script>
+  const categories = Query.create(`
+    SELECT DISTINCT category FROM products
+  `);
+</script>
+
+<Dropdown 
+  name="categoryFilter"
+  data={categories}
+  value="category"
+  defaultValue="All"
+>
+  <DropdownOption value="All" />
+</Dropdown>
+```
+
+### Dependent Dropdowns
+
+```svelte
+<Dropdown name="country" data={countries} value="code" label="name" />
+
+<Dropdown 
+  name="city"
+  data={cities}
+  value="city_id"
+  label="city_name"
+  where="country_code = {inputs.country}"
+/>
+```
+
+### Search Functionality
+
+The dropdown includes built-in search. When users type in the input field, options are automatically filtered by label.

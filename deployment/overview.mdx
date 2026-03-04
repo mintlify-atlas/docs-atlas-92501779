@@ -1,0 +1,144 @@
+---
+title: Deployment Overview
+description: Learn how to build and deploy your Evidence app to production
+---
+
+Evidence builds static sites that can be deployed to any static hosting platform. This guide covers the build process and available deployment options.
+
+## Build Process
+
+Evidence uses a two-step build process:
+
+1. **Build source data** - Query your data sources and generate static data files
+2. **Build the app** - Create static HTML, CSS, and JavaScript files
+
+### Build Commands
+
+Evidence provides several CLI commands for building your app:
+
+<CodeGroup>
+```bash npm
+# Build data from sources
+npm run sources
+
+# Build the app for production
+npm run build
+
+# Build with strict error checking
+npm run build:strict
+```
+
+```bash pnpm
+# Build data from sources
+pnpm sources
+
+# Build the app for production
+pnpm build
+
+# Build with strict error checking
+pnpm build:strict
+```
+</CodeGroup>
+
+### Build Output
+
+The `evidence build` command:
+- Runs `npx vite build` in the `.evidence/template` directory
+- Generates a static site in the `./build` directory
+- Uses `@sveltejs/adapter-static` to create static HTML files
+- Includes hashed data files for cache invalidation
+
+The build output includes:
+- Static HTML pages for each route
+- JavaScript bundles
+- CSS stylesheets
+- Data files in Parquet format (in `data/` directory)
+- A `manifest.json` file tracking rendered data files
+
+### Environment Variables
+
+Control the build process with environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EVIDENCE_BUILD_DIR` | `./build` | Output directory for built files |
+| `EVIDENCE_DATA_DIR` | `./static/data` | Directory for source data files |
+| `EVIDENCE_DATA_URL_PREFIX` | `static/data` | URL prefix for data files |
+| `NODE_OPTIONS` | - | Node.js options (automatically set to `--max-old-space-size=4096`) |
+
+### Strict Mode
+
+The `build:strict` command enables strict error checking:
+- Fails the build on query errors
+- Blocks builds when datasets marked with `emptySet="error"` are empty
+- Useful for CI/CD pipelines to catch errors before deployment
+
+<CodeGroup>
+```bash npm
+npm run build:strict
+```
+
+```bash pnpm
+pnpm build:strict
+```
+</CodeGroup>
+
+## Deployment Options
+
+Evidence can be deployed to any platform that supports static sites:
+
+### Platform-Specific Guides
+
+- [Netlify](/deployment/netlify) - Deploy with continuous deployment from Git
+- [Vercel](/deployment/vercel) - Deploy with zero configuration
+- [Docker](/deployment/docker) - Deploy with containerization
+- [Static Hosting](/deployment/static-hosting) - Deploy to any static hosting provider
+
+### Self-Hosted Options
+
+Evidence supports deployment to:
+- Netlify
+- Vercel
+- AWS Amplify
+- Azure Static Web Apps
+- Cloudflare Pages
+- Firebase Hosting
+- GitHub Pages
+- GitLab Pages
+- Hugging Face Spaces
+- Any static file server
+
+## Preview Your Build
+
+Before deploying, preview your production build locally:
+
+<CodeGroup>
+```bash npm
+npm run preview
+```
+
+```bash pnpm
+pnpm preview
+```
+</CodeGroup>
+
+This command:
+- Runs `npx serve build` to serve the built files
+- Starts a local server (typically on port 3000)
+- Supports SPA mode with the `-s` flag when `VITE_EVIDENCE_SPA=true`
+
+## Memory Configuration
+
+Evidence automatically increases Node.js memory limits during builds to `4096MB`. This prevents out-of-memory errors when building large projects.
+
+To override this, set `NODE_OPTIONS` before building:
+
+```bash
+NODE_OPTIONS="--max-old-space-size=8192" npm run build
+```
+
+## Next Steps
+
+- Configure [rendering modes](/deployment/configuration/rendering-modes) for your deployment
+- Set up [base paths](/deployment/configuration/base-paths) for subdirectory deployments
+- Manage [environments](/deployment/configuration/environments) for different deployment targets

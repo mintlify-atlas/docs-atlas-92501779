@@ -1,0 +1,480 @@
+---
+title: Text & Layout Components
+description: Format and organize your Evidence pages with BigValue, Value, Grid, Tabs, Accordion, and more
+---
+
+Evidence provides components for formatting text, displaying metrics, and organizing page layout.
+
+## Metric Components
+
+<CardGroup cols={2}>
+  <Card title="BigValue" icon="gauge-high">
+    Display key metrics with comparisons and sparklines
+  </Card>
+  <Card title="Value" icon="hashtag">
+    Show individual values from queries
+  </Card>
+  <Card title="Delta" icon="arrow-trend-up">
+    Display changes with up/down indicators
+  </Card>
+  <Card title="Sparkline" icon="chart-line">
+    Inline mini charts
+  </Card>
+</CardGroup>
+
+## BigValue
+
+BigValue displays key metrics with optional sparklines and comparison values.
+
+### Basic BigValue
+
+```markdown
+```sql orders_with_comparisons
+SELECT 
+  category,
+  month,
+  sales,
+  sales - LAG(sales) OVER (PARTITION BY category ORDER BY month) as sales_change,
+  (sales - LAG(sales) OVER (PARTITION BY category ORDER BY month)) / LAG(sales) OVER (PARTITION BY category ORDER BY month) as sales_change_pct
+FROM orders
+```
+
+<BigValue 
+  data={orders_with_comparisons} 
+  value="sales"
+  title="Total Sales"
+/>
+```
+
+### With Comparison
+
+Show period-over-period changes:
+
+```markdown
+<BigValue 
+  data={orders_with_comparisons} 
+  value="sales"
+  comparison="sales_change_pct"
+  comparisonTitle="vs. Last Month"
+/>
+```
+
+### With Sparkline
+
+Add a trend visualization:
+
+```markdown
+<BigValue 
+  data={orders_with_comparisons} 
+  value="sales"
+  sparkline="month"
+  comparison="sales_change_pct"
+  comparisonTitle="vs. Last Month"
+  sparklineType="area"
+/>
+```
+
+### BigValue Props
+
+<ParamField path="data" type="QueryResult" required>
+  Query result containing the metric data
+</ParamField>
+
+<ParamField path="value" type="string" required>
+  Column name containing the primary value
+</ParamField>
+
+<ParamField path="title" type="string">
+  Title displayed above the value
+</ParamField>
+
+<ParamField path="comparison" type="string">
+  Column name for comparison value (e.g., change percentage)
+</ParamField>
+
+<ParamField path="comparisonTitle" type="string">
+  Label for the comparison value
+</ParamField>
+
+<ParamField path="comparisonDelta" type="boolean" default="true">
+  Show delta indicator (up/down arrow)
+</ParamField>
+
+<ParamField path="sparkline" type="string">
+  Column name for x-axis of sparkline
+</ParamField>
+
+<ParamField path="sparklineType" type="'line' | 'area' | 'bar'" default="line">
+  Type of sparkline visualization
+</ParamField>
+
+<ParamField path="sparklineColor" type="string">
+  Color for sparkline
+</ParamField>
+
+<ParamField path="sparklineYScale" type="boolean" default="false">
+  Show y-axis scale on sparkline
+</ParamField>
+
+<ParamField path="fmt" type="string">
+  Format for the value (usd, eur, pct, num0, etc.)
+</ParamField>
+
+<ParamField path="downIsGood" type="boolean" default="false">
+  Invert comparison colors (green for down, red for up)
+</ParamField>
+
+<ParamField path="neutralMin" type="number">
+  Lower bound for neutral comparison color
+</ParamField>
+
+<ParamField path="neutralMax" type="number">
+  Upper bound for neutral comparison color
+</ParamField>
+
+### Multiple BigValues
+
+Connect multiple BigValues with synchronized interactions:
+
+```markdown
+<BigValue 
+  data={owc} 
+  value="sales"
+  sparkline="month"
+  comparison="sales_change_pct"
+  comparisonTitle="vs. Last Month"
+  connectGroup="bigvalues"
+/>
+
+<BigValue 
+  data={owc} 
+  value="num_orders"
+  title="Orders"
+  sparkline="month"
+  sparklineType="bar"
+  comparison="num_orders_change_pct"
+  comparisonTitle="vs. Last Month"
+  connectGroup="bigvalues"
+/>
+
+<BigValue 
+  data={owc} 
+  value="aov"
+  title="AOV ($)"
+  sparkline="month"
+  comparison="aov_change_pct"
+  comparisonTitle="vs. Last Month"
+  connectGroup="bigvalues"
+/>
+```
+
+## Value
+
+Display a single value from a query result:
+
+```markdown
+```sql total_revenue
+SELECT SUM(revenue) as total FROM orders
+```
+
+Revenue: <Value data={total_revenue} column="total" fmt="usd"/>
+```
+
+### Value Props
+
+<ParamField path="data" type="QueryResult" required>
+  Query result containing the value
+</ParamField>
+
+<ParamField path="column" type="string">
+  Column name to display
+</ParamField>
+
+<ParamField path="row" type="number" default="0">
+  Row index (0-based)
+</ParamField>
+
+<ParamField path="fmt" type="string">
+  Format specification
+</ParamField>
+
+## Delta
+
+Show a value change with visual indicator:
+
+```markdown
+<Delta value=0.15 fmt="pct"/>
+<Delta value=-0.08 fmt="pct" downIsGood=true/>
+```
+
+## Sparkline
+
+Inline mini charts:
+
+```markdown
+```sql daily_sales
+SELECT date, revenue FROM orders
+```
+
+<Sparkline data={daily_sales} x="date" y="revenue" type="area"/>
+```
+
+## Layout Components
+
+<CardGroup cols={3}>
+  <Card title="Grid" icon="grid">
+    Responsive column layouts
+  </Card>
+  <Card title="Tabs" icon="folder">
+    Organize content in tabs
+  </Card>
+  <Card title="Accordion" icon="chevron-down">
+    Collapsible content sections
+  </Card>
+  <Card title="Alert" icon="triangle-exclamation">
+    Highlight important information
+  </Card>
+  <Card title="Details" icon="circle-info">
+    Expandable details sections
+  </Card>
+</CardGroup>
+
+## Grid
+
+Create responsive column layouts:
+
+```markdown
+<Grid cols=3>
+  <BigValue data={metrics} value="sales" title="Sales"/>
+  <BigValue data={metrics} value="orders" title="Orders"/>
+  <BigValue data={metrics} value="customers" title="Customers"/>
+</Grid>
+```
+
+### Grid Props
+
+<ParamField path="cols" type="number" default="2">
+  Number of columns
+</ParamField>
+
+<ParamField path="gap" type="string" default="md">
+  Gap between items (sm, md, lg)
+</ParamField>
+
+## Tabs
+
+Organize content into tabs:
+
+```markdown
+<Tabs id="my-tabs">
+  <Tab label="Overview">
+    ## Overview Content
+    
+    Summary information goes here...
+  </Tab>
+  <Tab label="Details">
+    ## Detailed Analysis
+    
+    Detailed information goes here...
+  </Tab>
+  <Tab label="Data">
+    <DataTable data={orders}/>
+  </Tab>
+</Tabs>
+```
+
+### Colored Tabs
+
+```markdown
+<Tabs id="colored-tabs" color="#f6635c">
+  <Tab label="Tab 1">
+    Content 1
+  </Tab>
+  <Tab label="Tab 2">
+    Content 2
+  </Tab>
+</Tabs>
+```
+
+### Tabs Props
+
+<ParamField path="id" type="string" required>
+  Unique identifier for the tabs
+</ParamField>
+
+<ParamField path="color" type="string">
+  Accent color (hex, rgb, hsl, or color name)
+</ParamField>
+
+## Accordion
+
+Create collapsible sections:
+
+```markdown
+<Accordion>
+  <AccordionItem title="Q1 Results">
+    ## Q1 Performance
+    
+    First quarter results and analysis...
+  </AccordionItem>
+  <AccordionItem title="Q2 Results">
+    ## Q2 Performance
+    
+    Second quarter results and analysis...
+  </AccordionItem>
+  <AccordionItem title="Q3 Results">
+    ## Q3 Performance
+    
+    Third quarter results and analysis...
+  </AccordionItem>
+</Accordion>
+```
+
+### Single Mode
+
+Only allow one section open at a time:
+
+```markdown
+<Accordion single>
+  <AccordionItem title="Item 1">
+    Content 1
+  </AccordionItem>
+  <AccordionItem title="Item 2">
+    Content 2
+  </AccordionItem>
+</Accordion>
+```
+
+### Custom Title Slot
+
+```markdown
+<Accordion>
+  <AccordionItem title="Item 1">
+    <span slot=title>
+      <span class="text-red-600">Custom title</span> with styling
+    </span>
+    
+    Accordion content...
+  </AccordionItem>
+</Accordion>
+```
+
+### Dynamic Accordion from Query
+
+```markdown
+```sql categories
+SELECT DISTINCT category FROM orders
+```
+
+```markdown
+<Accordion>
+  <AccordionItem title="Category Name">
+    <Value data={category_data}/>
+  </AccordionItem>
+</Accordion>
+```
+
+### Accordion Props
+
+<ParamField path="single" type="boolean" default="false">
+  Only allow one item open at a time
+</ParamField>
+
+## Alert
+
+Highlight important information:
+
+```markdown
+<Alert status="info">
+  This report was last updated on January 15, 2024.
+</Alert>
+
+<Alert status="warning">
+  Data for the current month is incomplete.
+</Alert>
+
+<Alert status="error">
+  Connection to production database failed.
+</Alert>
+
+<Alert status="success">
+  Report generated successfully.
+</Alert>
+```
+
+## Details
+
+Expandable details section:
+
+```markdown
+<Details title="Methodology">
+  This analysis uses a cohort-based approach...
+</Details>
+```
+
+## Text Formatting
+
+Evidence supports standard Markdown formatting:
+
+### Headings
+
+```markdown
+# Heading 1
+## Heading 2
+### Heading 3
+```
+
+### Text Styles
+
+```markdown
+**Bold text**
+*Italic text*
+~~Strikethrough~~
+`inline code`
+```
+
+### Lists
+
+```markdown
+- Bullet point 1
+- Bullet point 2
+  - Nested point
+
+1. Numbered item 1
+2. Numbered item 2
+```
+
+### Links
+
+```markdown
+[Link text](https://example.com)
+```
+
+### Code Blocks
+
+````markdown
+```sql
+SELECT * FROM orders
+WHERE date >= '2024-01-01'
+```
+````
+
+## Best Practices
+
+1. **Use BigValue for KPIs** - Highlight your most important metrics
+2. **Add comparisons** - Show period-over-period changes
+3. **Organize with Tabs** - Group related content
+4. **Use Accordion for FAQs** - Perfect for expandable sections
+5. **Add context with Alerts** - Communicate data quality or freshness
+6. **Grid for metrics** - Create dashboard-style layouts
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Inputs" icon="sliders" href="/components/inputs">
+    Add interactivity with input components
+  </Card>
+  <Card title="Charts" icon="chart-line" href="/components/charts">
+    Visualize data with charts
+  </Card>
+</CardGroup>

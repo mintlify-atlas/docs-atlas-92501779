@@ -1,0 +1,232 @@
+---
+title: Histogram
+description: Display the distribution of continuous data by grouping values into bins
+---
+
+# Histogram
+
+The `Histogram` component automatically bins continuous data and displays the frequency distribution, making it ideal for analyzing data distributions and identifying patterns.
+
+## Props
+
+### Data Props
+
+<ParamField path="data" type="Query | array" required>
+  Query result or array of objects containing the data to visualize
+</ParamField>
+
+<ParamField path="x" type="string" required>
+  Column name containing the continuous values to bin and display
+</ParamField>
+
+### Formatting Props
+
+<ParamField path="xFmt" type="string">
+  Format string for x-axis values (bin labels)
+</ParamField>
+
+### Bar Style Props
+
+<ParamField path="fillColor" type="string">
+  Fill color for histogram bars (hex, rgb, or theme color name)
+</ParamField>
+
+<ParamField path="fillOpacity" type="number">
+  Opacity of bar fill (0-1)
+</ParamField>
+
+### Chart Layout Props
+
+<ParamField path="title" type="string">
+  Chart title displayed at the top
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  Chart subtitle displayed below the title
+</ParamField>
+
+<ParamField path="legend" type="boolean" default={false}>
+  Whether to show the legend
+</ParamField>
+
+<ParamField path="chartAreaHeight" type="number">
+  Height of the chart area in pixels
+</ParamField>
+
+### Axis Props
+
+<ParamField path="xAxisTitle" type="string | boolean">
+  Title for x-axis. Use `true` to use column name
+</ParamField>
+
+<ParamField path="yAxisTitle" type="string | boolean">
+  Title for y-axis (typically "Frequency" or "Count")
+</ParamField>
+
+<ParamField path="xGridlines" type="boolean">
+  Show vertical gridlines
+</ParamField>
+
+<ParamField path="yGridlines" type="boolean">
+  Show horizontal gridlines
+</ParamField>
+
+<ParamField path="xAxisLabels" type="boolean">
+  Show labels on x-axis
+</ParamField>
+
+<ParamField path="yAxisLabels" type="boolean">
+  Show labels on y-axis
+</ParamField>
+
+<ParamField path="xBaseline" type="boolean">
+  Show x-axis baseline
+</ParamField>
+
+<ParamField path="yBaseline" type="boolean">
+  Show y-axis baseline
+</ParamField>
+
+<ParamField path="xTickMarks" type="boolean">
+  Show tick marks on x-axis
+</ParamField>
+
+<ParamField path="yTickMarks" type="boolean">
+  Show tick marks on y-axis
+</ParamField>
+
+### Axis Scale Props
+
+<ParamField path="yMin" type="number" default={0}>
+  Minimum value for y-axis
+</ParamField>
+
+<ParamField path="yMax" type="number">
+  Maximum value for y-axis
+</ParamField>
+
+### Color Props
+
+<ParamField path="colorPalette" type="string | array" default="default">
+  Color palette name or array of colors
+</ParamField>
+
+### Behavior Props
+
+<ParamField path="connectGroup" type="string">
+  Connect charts for synchronized interactions
+</ParamField>
+
+### Advanced Props
+
+<ParamField path="echartsOptions" type="object">
+  Custom ECharts configuration object
+</ParamField>
+
+<ParamField path="seriesOptions" type="object">
+  Custom series configuration
+</ParamField>
+
+<ParamField path="printEchartsConfig" type="boolean" default={false}>
+  Print ECharts config to console
+</ParamField>
+
+<ParamField path="renderer" type="string">
+  Renderer type: 'canvas' | 'svg'
+</ParamField>
+
+<ParamField path="downloadableData" type="boolean">
+  Enable data download
+</ParamField>
+
+<ParamField path="downloadableImage" type="boolean">
+  Enable image download
+</ParamField>
+
+<ParamField path="emptySet" type="string">
+  Empty data behavior: 'pass' | 'warn' | 'error'
+</ParamField>
+
+<ParamField path="emptyMessage" type="string">
+  Custom empty data message
+</ParamField>
+
+<ParamField path="leftPadding" type="number">
+  Left padding for chart area
+</ParamField>
+
+<ParamField path="rightPadding" type="number">
+  Right padding for chart area
+</ParamField>
+
+## Examples
+
+### Basic Histogram
+
+```markdown
+```sql order_values
+select order_total
+from orders
+```
+
+<Histogram data={order_values} x="order_total" />
+```
+
+### Histogram with Custom Styling
+
+```markdown
+<Histogram 
+  data={order_values} 
+  x="order_total"
+  title="Distribution of Order Values"
+  fillColor="primary"
+  fillOpacity=0.8
+  xFmt="usd"
+  xAxisTitle="Order Total"
+  yAxisTitle="Number of Orders"
+/>
+```
+
+### Histogram with Gridlines
+
+```markdown
+<Histogram 
+  data={customer_ages} 
+  x="age"
+  title="Customer Age Distribution"
+  yGridlines="true"
+  xAxisTitle="Age"
+  yAxisTitle="Count"
+/>
+```
+
+### Formatted Values
+
+```markdown
+```sql response_times
+select response_time_ms
+from api_logs
+```
+
+<Histogram 
+  data={response_times} 
+  x="response_time_ms"
+  title="API Response Time Distribution"
+  xFmt="#,##0"
+  fillColor="#4F46E5"
+  yGridlines="true"
+/>
+```
+
+### Custom Height
+
+```markdown
+<Histogram 
+  data={order_values} 
+  x="order_total"
+  chartAreaHeight=400
+  title="Order Value Distribution"
+  subtitle="Last 30 days"
+  xFmt="usd0"
+/>
+```

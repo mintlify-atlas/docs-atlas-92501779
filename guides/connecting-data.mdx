@@ -1,0 +1,349 @@
+---
+title: Connecting Data Sources
+description: Learn how to connect Evidence to databases, warehouses, and files
+---
+
+Evidence can connect to multiple data sources including databases, data warehouses, and flat files. This guide covers everything you need to know about data connections.
+
+## Supported Data Sources
+
+Evidence supports these data sources out of the box:
+
+- **Databases**: PostgreSQL, MySQL, SQL Server, SQLite
+- **Warehouses**: Snowflake, BigQuery, Databricks, Redshift
+- **Files**: CSV, Parquet, DuckDB
+- **Query Engines**: Trino, Athena
+
+## Connection Configuration
+
+<Steps>
+
+<Step title="Create a Connection File">
+
+Data source connections are defined in YAML files in the `sources/` directory. Each subdirectory represents a separate data source.
+
+Create a directory and connection file:
+
+```bash
+mkdir -p sources/my_warehouse
+```
+
+Create `sources/my_warehouse/connection.yaml`:
+
+```yaml
+name: my_warehouse
+type: postgres
+options:
+  host: database.example.com
+  port: 5432
+  database: analytics
+  user: evidence_user
+  password: ${EVIDENCE_PASSWORD}
+  ssl: true
+```
+
+Use environment variables (like `${EVIDENCE_PASSWORD}`) to keep credentials secure.
+
+</Step>
+
+<Step title="Configure Environment Variables">
+
+Create a `.env` file in your project root:
+
+```bash
+EVIDENCE_PASSWORD=your_secure_password
+SNOWFLAKE_USER=analytics_user
+SNOWFLAKE_PASSWORD=another_secure_password
+```
+
+**Important**: Add `.env` to your `.gitignore` to keep credentials out of version control.
+
+</Step>
+
+<Step title="Test Your Connection">
+
+Create a test query in your source directory:
+
+`sources/my_warehouse/test.sql`:
+
+```sql
+SELECT 1 as test_value
+```
+
+Run your Evidence app and check that the query executes successfully.
+
+</Step>
+
+</Steps>
+
+## Connection Examples
+
+### DuckDB (Local Database)
+
+DuckDB is perfect for local development and small to medium datasets:
+
+```yaml sources/local/connection.yaml
+name: local
+type: duckdb
+options:
+  filename: ./local.duckdb
+```
+
+DuckDB automatically loads and can query CSV and Parquet files directly:
+
+```sql
+SELECT * FROM read_csv_auto('data/sales.csv')
+```
+
+### CSV Files
+
+Evidence can read CSV files as a data source:
+
+```yaml sources/csv/connection.yaml
+name: csv
+type: csv
+options: {}
+```
+
+Place your CSV files in `sources/csv/` and query them:
+
+```sql sources/csv/sales_data.sql
+SELECT * FROM sales_data.csv
+```
+
+### PostgreSQL
+
+```yaml sources/postgres/connection.yaml
+name: postgres_db
+type: postgres
+options:
+  host: ${POSTGRES_HOST}
+  port: 5432
+  database: ${POSTGRES_DATABASE}
+  user: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+  ssl: true
+```
+
+### Snowflake
+
+```yaml sources/snowflake/connection.yaml
+name: snowflake
+type: snowflake
+options:
+  account: ${SNOWFLAKE_ACCOUNT}
+  username: ${SNOWFLAKE_USER}
+  password: ${SNOWFLAKE_PASSWORD}
+  database: ANALYTICS
+  warehouse: COMPUTE_WH
+  schema: PUBLIC
+```
+
+### BigQuery
+
+```yaml sources/bigquery/connection.yaml
+name: bigquery
+type: bigquery
+options:
+  project_id: ${GCP_PROJECT_ID}
+  credentials_path: ./credentials.json
+```
+
+Or use a service account key directly:
+
+```yaml
+options:
+  project_id: my-project
+  client_email: ${GCP_CLIENT_EMAIL}
+  private_key: ${GCP_PRIVATE_KEY}
+```
+
+### Databricks
+
+```yaml sources/databricks/connection.yaml
+name: databricks
+type: databricks
+options:
+  server_hostname: ${DATABRICKS_HOST}
+  http_path: ${DATABRICKS_HTTP_PATH}
+  access_token: ${DATABRICKS_TOKEN}
+```
+
+## Working with Multiple Sources
+
+### Querying Multiple Databases
+
+You can query different data sources on the same page:
+
+```markdown
+---
+title: Cross-Database Analytics
+queries:
+  - warehouse_sales: warehouse_sales.sql      # From Snowflake
+  - app_events: app_events.sql                # From PostgreSQL
+  - local_targets: local_targets.sql          # From DuckDB
+---
+```
+
+### Joining Across Sources
+
+Use inline SQL to join data from different sources:
+
+```sql combined_metrics
+SELECT 
+  w.month,
+  w.total_sales,
+  a.total_events,
+  t.target
+FROM ${warehouse_sales} w
+LEFT JOIN ${app_events} a ON w.month = a.month
+LEFT JOIN ${local_targets} t ON w.month = t.month
+```
+
+## Query Organization
+
+### Source-Specific Queries
+
+Store queries alongside their connection configuration:
+
+```
+sources/
+  snowflake/
+    connection.yaml
+    orders.sql
+    customers.sql
+  postgres/
+    connection.yaml
+    events.sql
+    users.sql
+```
+
+Reference the full path in your pages:
+
+```yaml
+queries:
+  - orders: snowflake/orders.sql
+  - events: postgres/events.sql
+```
+
+### Shared Queries
+
+Place reusable queries in the `queries/` directory:
+
+```
+queries/
+  orders_by_month.sql
+  customer_summary.sql
+  product_metrics.sql
+```
+
+Reference without a path:
+
+```yaml
+queries:
+  - orders_by_month: orders_by_month.sql
+```
+
+## Real Example: E-commerce Database
+
+Here's a complete example from the Evidence project:
+
+```yaml sources/ecommerce/connection.yaml
+name: ecommerce
+type: duckdb
+options:
+  filename: ./ecommerce.duckdb
+```
+
+```sql sources/ecommerce/orders.sql
+SELECT * FROM orders
+```
+
+```sql sources/ecommerce/orders_by_month.sql
+SELECT 
+  DATE_TRUNC('month', order_datetime) as month,
+  COUNT(*) as num_orders,
+  SUM(sales) as total_sales,
+  SUM(sales) / COUNT(*) as avg_order_value
+FROM orders
+GROUP BY DATE_TRUNC('month', order_datetime)
+ORDER BY month
+```
+
+Use in your page:
+
+```markdown
+---
+queries:
+  - orders_by_month: ecommerce/orders_by_month.sql
+---
+
+# E-commerce Dashboard
+
+<LineChart 
+  data={orders_by_month}
+  x="month"
+  y="total_sales"
+  yAxisTitle="Revenue"
+/>
+```
+
+## Best Practices
+
+### Security
+
+- **Never commit credentials** - Use environment variables
+- **Use read-only accounts** - Evidence only needs SELECT permissions
+- **Limit access scope** - Grant access only to necessary schemas/tables
+- **Rotate credentials** - Update passwords regularly
+
+### Performance
+
+- **Pre-aggregate data** - Create summary tables in your warehouse
+- **Use materialized views** - For complex, frequently-used queries
+- **Limit result sets** - Use LIMIT or date filters for large tables
+- **Index appropriately** - Ensure your database has proper indexes
+
+### Organization
+
+- **One source per directory** - Keep connection files organized
+- **Descriptive names** - Use clear names like `snowflake_prod` or `postgres_staging`
+- **Document connections** - Add comments to YAML files explaining purpose
+- **Version control** - Commit connection files (without credentials)
+
+## Troubleshooting
+
+### Connection Fails
+
+**Check network access**: Ensure your database allows connections from your IP
+
+**Verify credentials**: Test credentials using a database client
+
+**Review SSL settings**: Some databases require `ssl: true` or specific SSL modes
+
+### Queries Run Slowly
+
+**Add filters**: Limit date ranges or row counts
+
+```sql
+SELECT * FROM orders 
+WHERE order_date >= CURRENT_DATE - INTERVAL '90 days'
+```
+
+**Create indexes**: Work with your DBA to add indexes on frequently queried columns
+
+**Use query caching**: Evidence caches query results during development
+
+### Environment Variables Not Working
+
+**Check .env file location**: Must be in project root
+
+**Restart dev server**: Changes to `.env` require a restart
+
+**Use correct syntax**: `${VARIABLE_NAME}` in YAML files
+
+## Next Steps
+
+- [Build your first app](/guides/build-first-app) - Create a complete dashboard
+- [Create charts](/guides/creating-charts) - Visualize your connected data
+- [Use templating](/guides/templating) - Build dynamic pages from your data

@@ -1,0 +1,196 @@
+---
+title: Alert
+description: Display important messages and notifications with contextual styling
+icon: triangle-exclamation
+---
+
+The Alert component displays important messages and notifications with color-coded status indicators. Use it to draw attention to warnings, errors, successes, or general information.
+
+## Basic Usage
+
+```html
+<Alert status="info">
+  This is an informational message.
+</Alert>
+```
+
+## Props
+
+<ParamField path="status" type="'base' | 'info' | 'positive' | 'warning' | 'negative'" default="'base'">
+  Controls the visual style and color of the alert:
+  - **base**: Default gray styling for general messages
+  - **info**: Blue styling for informational messages
+  - **positive**: Green styling for success messages
+  - **warning**: Yellow/amber styling for warnings
+  - **negative**: Red styling for errors or critical issues
+</ParamField>
+
+## Examples
+
+### Information Alert
+
+```html
+<Alert status="info">
+  Data was last updated on March 1, 2024 at 6:00 AM EST.
+</Alert>
+```
+
+### Success Alert
+
+```html
+<Alert status="positive">
+  Your report has been successfully generated and is ready to download.
+</Alert>
+```
+
+### Warning Alert
+
+```html
+<Alert status="warning">
+  This data is from a preliminary source and should be verified before use in production.
+</Alert>
+```
+
+### Error Alert
+
+```html
+<Alert status="negative">
+  Failed to load data. Please refresh the page or contact support if the issue persists.
+</Alert>
+```
+
+### Base Alert
+
+```html
+<Alert status="base">
+  Note: All values are displayed in USD.
+</Alert>
+```
+
+### Alert with Formatted Content
+
+```html
+<Alert status="warning">
+  **Important**: The following assumptions were made in this analysis:
+  - Exchange rates fixed at Jan 1, 2024 values
+  - Seasonal adjustments applied to Q4 data
+  - Outliers above 3 standard deviations removed
+</Alert>
+```
+
+### Alert with Lists
+
+```html
+<Alert status="info">
+  This dashboard includes the following metrics:
+  - Revenue (trailing 12 months)
+  - Customer acquisition cost
+  - Monthly recurring revenue
+  - Churn rate
+</Alert>
+```
+
+### Alert with Links
+
+```html
+<Alert status="negative">
+  Data quality issues detected. See the [data validation report](/reports/validation) for details.
+</Alert>
+```
+
+### Multiple Alerts
+
+```html
+<Alert status="warning">
+  Data refresh is currently in progress.
+</Alert>
+
+<Alert status="info">
+  Use the date picker to select a custom time range.
+</Alert>
+```
+
+### Alert in Report Context
+
+```html
+<h1>Q4 2024 Sales Report</h1>
+
+<Alert status="info">
+  This report covers October 1 - December 31, 2024.
+</Alert>
+
+<Grid cols=2lt;Grid cols="2">
+  <BarChart data={sales_data} />
+  <LineChart data={trend_data} />
+</Grid>
+
+<Alert status="positive">
+  Q4 revenue exceeded target by 12%.
+</Alert>
+```
+
+### Conditional Alert
+
+```sql query_status
+SELECT 
+  data_quality_score,
+  CASE 
+    WHEN data_quality_score < 0.7 THEN 'negative'
+    WHEN data_quality_score < 0.9 THEN 'warning'
+    ELSE 'positive'
+  END as alert_status,
+  CASE 
+    WHEN data_quality_score < 0.7 THEN 'Data quality is below acceptable thresholds'
+    WHEN data_quality_score < 0.9 THEN 'Data quality could be improved'
+    ELSE 'Data quality is excellent'
+  END as alert_message
+FROM data_quality_metrics
+LIMIT 1
+```
+
+```html
+<Alert status={query_status[0].alert_status}>
+  {query_status[0].alert_message}
+</Alert>
+```
+
+## Styling Notes
+
+The Alert component includes:
+- Colored border matching the status type
+- Semi-transparent background in the status color
+- Rounded corners for visual polish
+- Automatic margin bottom for spacing
+- Proper handling of first/last child markdown elements
+
+## Deprecated Status Values
+
+The following status values are deprecated but still supported for backward compatibility:
+- `default` → use `base` instead
+- `danger` → use `negative` instead  
+- `success` → use `positive` instead
+
+A console warning will be shown if deprecated values are used.
+
+## Use Cases
+
+- **Data freshness**: Inform users when data was last updated
+- **Methodology notes**: Highlight important assumptions or limitations
+- **Success messages**: Confirm completed actions
+- **Error notifications**: Alert users to issues or failures
+- **Warnings**: Draw attention to potential concerns
+- **General information**: Provide context or instructions
+- **Data quality indicators**: Flag quality issues or validation results
+
+## Accessibility
+
+- The component uses `role="alert"` for screen reader compatibility
+- Color is not the only indicator (border and background provide visual distinction)
+- Content supports full markdown formatting for structured information
+
+## Notes
+
+- Supports full markdown content including bold, italic, links, and lists
+- Automatically removes extra margins from first and last child elements for cleaner spacing
+- Based on Flowbite alert component design
+- Border and background colors are semi-transparent for better visual integration

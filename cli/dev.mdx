@@ -1,0 +1,90 @@
+---
+title: evidence dev
+description: Launch the local Evidence development server
+---
+
+The `evidence dev` command starts a local development server with hot module reloading for building Evidence projects.
+
+## Syntax
+
+```bash
+evidence dev [options]
+```
+
+## Description
+
+This command launches the Evidence development environment, which:
+
+- Starts a Vite development server on port 3000
+- Watches for file changes in your project
+- Provides hot module reloading for instant updates
+- Syncs files from your project to the `.evidence/template` directory
+- Loads environment variables from `.env` files
+- Automatically increases Node.js memory limit to 4096MB
+
+## Options
+
+<ParamField path="--debug" type="boolean" default="false">
+  Enables verbose console logs for debugging. When enabled, detailed logging information is printed to the console.
+</ParamField>
+
+## File Watching
+
+The dev server automatically watches and syncs the following directories:
+
+- `pages/` - Markdown pages
+- `static/` - Static files (images, etc.)
+- `sources/` - Source configuration files
+- `queries/` - SQL query files
+- `components/` - Custom Svelte components
+- `partials/` - Reusable content partials
+- `app.css` - Custom theme file
+
+## Usage Examples
+
+### Start the development server
+
+```bash
+evidence dev
+```
+
+The server will be available at `http://localhost:3000`.
+
+### Start with debug logging
+
+```bash
+evidence dev --debug
+```
+
+## Environment Variables
+
+The dev command respects the following environment variables:
+
+- `EVIDENCE_DATA_DIR` - Directory for data files (default: `./static/data`)
+- `EVIDENCE_DATA_URL_PREFIX` - URL prefix for data files (default: `static/data`)
+- `NODE_OPTIONS` - Node.js options (automatically set if not present)
+
+See [Environment Variables](/cli/environment-variables) for a complete list.
+
+## Exit Codes
+
+- `0` - Server started successfully
+- Non-zero - Error occurred during startup
+
+## Warnings
+
+If no source manifest is found at `.evidence/template/static/data/manifest.json`, you'll see:
+
+```bash
+[!] Unable to load source manifest
+This likely means you have no source data, and need to generate it.
+Running npm run sources will generate the needed data.
+```
+
+Run `evidence sources` to generate the required data files.
+
+## Related Commands
+
+- [evidence build](/cli/build) - Build production outputs
+- [evidence sources](/cli/sources) - Generate data from source queries
+- [evidence preview](/cli/preview) - Preview the production build

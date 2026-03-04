@@ -1,0 +1,354 @@
+---
+title: "Microsoft SQL Server"
+description: "Connect Evidence to Microsoft SQL Server and Azure SQL Database"
+---
+
+## Installation
+
+Install the SQL Server connector:
+
+```bash
+npm install @evidence-dev/mssql
+```
+
+## Authentication Methods
+
+SQL Server supports multiple authentication methods:
+
+1. **SQL Login** (username/password)
+2. **DefaultAzureCredential** (Azure managed identity)
+3. **Access Token** (Azure AD access token)
+4. **Entra ID User/Password** (Azure AD credentials)
+5. **Service Principal Secret** (Azure AD application)
+
+## Configuration
+
+### SQL Login (Standard Authentication)
+
+<CodeGroup>
+```yaml connection.yaml
+name: sqlserver
+type: mssql
+options:
+  server: localhost
+  port: 1433
+  database: mydb
+  authenticationType: default
+  user: ${MSSQL_USER}
+  password: ${MSSQL_PASSWORD}
+  encrypt: true
+  trust_server_certificate: false
+```
+
+```env .env
+MSSSQL_USER=sa
+MSSSQL_PASSWORD=your_secure_password
+```
+</CodeGroup>
+
+### Azure DefaultAzureCredential
+
+Use Azure managed identity for authentication:
+
+```yaml connection.yaml
+name: sqlserver_azure
+type: mssql
+options:
+  server: myserver.database.windows.net
+  database: mydb
+  authenticationType: azure-active-directory-default
+  encrypt: true
+```
+
+### Access Token
+
+```yaml connection.yaml
+name: sqlserver_token
+type: mssql
+options:
+  server: myserver.database.windows.net
+  database: mydb
+  authenticationType: azure-active-directory-access-token
+  attoken: ${AZURE_ACCESS_TOKEN}
+  encrypt: true
+```
+
+### Entra ID User/Password
+
+```yaml connection.yaml
+name: sqlserver_entraid
+type: mssql
+options:
+  server: myserver.database.windows.net
+  database: mydb
+  authenticationType: azure-active-directory-password
+  pwuname: ${AZURE_USERNAME}
+  pwpword: ${AZURE_PASSWORD}
+  pwclientid: ${AZURE_CLIENT_ID}
+  pwtenantid: ${AZURE_TENANT_ID}
+  encrypt: true
+```
+
+### Service Principal Secret
+
+```yaml connection.yaml
+name: sqlserver_sp
+type: mssql
+options:
+  server: myserver.database.windows.net
+  database: mydb
+  authenticationType: azure-active-directory-service-principal-secret
+  spclientid: ${AZURE_CLIENT_ID}
+  spclientsecret: ${AZURE_CLIENT_SECRET}
+  sptenantid: ${AZURE_TENANT_ID}
+  encrypt: true
+```
+
+## Configuration Parameters
+
+<ParamField path="server" type="string" required>
+  Server hostname or IP address
+</ParamField>
+
+<ParamField path="port" type="number" default={1433}>
+  Server port
+</ParamField>
+
+<ParamField path="database" type="string" required>
+  Database name to connect to
+</ParamField>
+
+<ParamField path="authenticationType" type="string" required default="default">
+  Authentication method: `default`, `azure-active-directory-default`, `azure-active-directory-access-token`, `azure-active-directory-password`, or `azure-active-directory-service-principal-secret`
+</ParamField>
+
+<ParamField path="encrypt" type="boolean" default={false}>
+  Enable encryption. **Should be true when using Azure SQL Database**
+</ParamField>
+
+<ParamField path="trust_server_certificate" type="boolean" default={false}>
+  Trust self-signed certificates. **Should be true for local dev with self-signed certificates**
+</ParamField>
+
+<ParamField path="connection_timeout" type="number" default={15000}>
+  Connection timeout in milliseconds
+</ParamField>
+
+<ParamField path="request_timeout" type="number" default={15000}>
+  Request timeout in milliseconds
+</ParamField>
+
+### SQL Login Parameters
+
+<ParamField path="user" type="string" required>
+  SQL Server username
+</ParamField>
+
+<ParamField path="password" type="string" required>
+  SQL Server password
+</ParamField>
+
+### Azure Access Token Parameters
+
+<ParamField path="attoken" type="string" required>
+  Azure AD access token
+</ParamField>
+
+### Entra ID User/Password Parameters
+
+<ParamField path="pwuname" type="string" required>
+  Azure AD username
+</ParamField>
+
+<ParamField path="pwpword" type="string" required>
+  Azure AD password
+</ParamField>
+
+<ParamField path="pwclientid" type="string" required>
+  Azure AD application client ID
+</ParamField>
+
+<ParamField path="pwtenantid" type="string" required>
+  Azure AD tenant ID
+</ParamField>
+
+### Service Principal Parameters
+
+<ParamField path="spclientid" type="string" required>
+  Service principal client ID
+</ParamField>
+
+<ParamField path="spclientsecret" type="string" required>
+  Service principal client secret
+</ParamField>
+
+<ParamField path="sptenantid" type="string" required>
+  Azure AD tenant ID
+</ParamField>
+
+## Features
+
+### Type Mapping
+
+SQL Server types are mapped to Evidence types:
+
+- **Numbers**: INT, TINYINT, BIGINT, SMALLINT, FLOAT, REAL, DECIMAL, NUMERIC, MONEY, SMALLMONEY
+- **Strings**: VARCHAR, NVARCHAR, CHAR, NCHAR, TEXT, NTEXT, XML
+- **Dates**: DATETIME, SMALLDATETIME, DATE, DATETIME2, DATETIMEOFFSET
+- **Booleans**: BIT
+
+### Streaming Results
+
+The connector streams query results in batches (default 100,000 rows) for memory-efficient processing.
+
+### Row Count Estimation
+
+The connector estimates total row counts for queries to help optimize rendering and pagination.
+
+## Example Query
+
+Create a SQL file in your Evidence project:
+
+```sql queries/sales_analysis.sql
+SELECT 
+  CAST(order_date AS DATE) as date,
+  region,
+  SUM(total_amount) as revenue,
+  COUNT(*) as order_count
+FROM sales.orders
+WHERE order_date >= DATEADD(month, -6, GETDATE())
+GROUP BY CAST(order_date AS DATE), region
+ORDER BY date DESC, revenue DESC
+```
+
+## Azure SQL Database
+
+### Connection Example
+
+```yaml connection.yaml
+name: azure_sql
+type: mssql
+options:
+  server: myserver.database.windows.net
+  database: mydb
+  authenticationType: default
+  user: ${AZURE_SQL_USER}
+  password: ${AZURE_SQL_PASSWORD}
+  encrypt: true
+  trust_server_certificate: false
+```
+
+### Firewall Rules
+
+Ensure your IP address is allowed in Azure SQL firewall rules:
+
+1. Go to Azure Portal → SQL Database → Your Database
+2. Click "Set server firewall"
+3. Add your Evidence instance IP or IP range
+
+### Managed Identity
+
+For Azure-hosted Evidence instances, use managed identity:
+
+```yaml connection.yaml
+name: azure_sql_mi
+type: mssql
+options:
+  server: myserver.database.windows.net
+  database: mydb
+  authenticationType: azure-active-directory-default
+  encrypt: true
+```
+
+## Performance Optimization
+
+### Use Proper Indexes
+
+```sql
+CREATE NONCLUSTERED INDEX IX_Orders_Date 
+ON sales.orders(order_date) 
+INCLUDE (total_amount, region);
+```
+
+### Avoid SELECT *
+
+Specify only needed columns:
+
+```sql
+SELECT 
+  order_id,
+  order_date,
+  total_amount
+FROM sales.orders
+WHERE order_date >= '2024-01-01'
+```
+
+### Use NOLOCK for Read-Only Queries
+
+For reporting queries on high-traffic tables:
+
+```sql
+SELECT 
+  COUNT(*) as order_count,
+  SUM(total_amount) as revenue
+FROM sales.orders WITH (NOLOCK)
+WHERE order_date >= GETDATE() - 30
+```
+
+<Warning>
+  NOLOCK can read uncommitted data. Only use for reporting where slight data inconsistencies are acceptable.
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection timeout errors">
+    - Verify server hostname and port
+    - Check firewall rules (especially for Azure SQL)
+    - Increase `connection_timeout` for slow networks
+    - Ensure SQL Server is running and accepting connections
+  </Accordion>
+  
+  <Accordion title="SSL/TLS errors">
+    For local development with self-signed certificates:
+    ```yaml
+    trust_server_certificate: true
+    encrypt: true
+    ```
+    
+    For Azure SQL Database:
+    ```yaml
+    trust_server_certificate: false
+    encrypt: true
+    ```
+  </Accordion>
+  
+  <Accordion title="Azure authentication errors">
+    - Verify tenant ID and client ID are correct
+    - Ensure the service principal/app has permissions on the database
+    - For managed identity, ensure it's assigned to the Azure resource
+    - Check that the database user exists:
+      ```sql
+      CREATE USER [service-principal-name] FROM EXTERNAL PROVIDER;
+      ALTER ROLE db_datareader ADD MEMBER [service-principal-name];
+      ```
+  </Accordion>
+  
+  <Accordion title="Login failed errors">
+    - Verify username and password are correct
+    - Check that SQL Server authentication is enabled (not Windows-only)
+    - Ensure the user has access to the specified database:
+      ```sql
+      USE mydb;
+      CREATE USER username FOR LOGIN username;
+      ALTER ROLE db_datareader ADD MEMBER username;
+      ```
+  </Accordion>
+  
+  <Accordion title="Performance issues">
+    - Add indexes to commonly filtered columns
+    - Use query execution plans to identify bottlenecks
+    - Consider using columnstore indexes for analytical queries
+    - Update statistics: `UPDATE STATISTICS table_name`
+  </Accordion>
+</AccordionGroup>
